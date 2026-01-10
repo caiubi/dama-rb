@@ -1,0 +1,12 @@
+# Rust build artifacts
+ext/dama_native/target/
+
+# Ruby
+coverage/
+.ruby-lsp/
+
+# Game project build outputs
+examples/*/dist/
+
+# OS
+.DS_Store
