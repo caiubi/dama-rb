@@ -1,0 +1,76 @@
+#![allow(clippy::too_many_arguments)]
+
+pub mod engine;
+pub mod renderer;
+
+use engine::Engine;
+
+// ===========================================================================
+// Native FFI exports (extern "C" for Ruby FFI)
+// ===========================================================================
+#[cfg(not(target_arch = "wasm32"))]
+pub mod native_ffi {
+    use super::*;
+    use std::ffi::CString;
+    use std::os::raw::c_char;
+
+    thread_local! {
+        static LAST_ERROR: std::cell::RefCell<Option<CString>> = const { std::cell::RefCell::new(None) };
+    }
+
+    fn set_last_error(msg: &str) {
+        LAST_ERROR.with(|cell| { *cell.borrow_mut() = CString::new(msg).ok(); });
+    }
+
+    fn ok_or_err<T>(result: Result<T, String>, success_val: i32) -> i32 {
+        match result {
+            Ok(_) => success_val,
+            Err(e) => { set_last_error(&e); -1 }
+        }
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn dama_engine_init_headless(width: u32, height: u32) -> i32 {
+        let _ = env_logger::try_init();
+        ok_or_err(Engine::init_headless(width, height), 0)
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn dama_engine_shutdown() -> i32 { ok_or_err(Engine::shutdown(), 0) }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn dama_engine_begin_frame() -> i32 { ok_or_err(Engine::with(|e| e.begin_frame()), 0) }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn dama_engine_end_frame() -> i32 { ok_or_err(Engine::with(|e| e.end_frame()), 0) }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn dama_engine_delta_time() -> f64 { Engine::with(|e| Ok(e.delta_time())).unwrap_or(0.0) }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn dama_engine_frame_count() -> u64 { Engine::with(|e| Ok(e.frame_count())).unwrap_or(0) }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn dama_engine_last_error() -> *const c_char {
+        LAST_ERROR.with(|cell| cell.borrow().as_ref().map(|s| s.as_ptr()).unwrap_or(std::ptr::null()))
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn dama_render_clear(r: f32, g: f32, b: f32, a: f32) -> i32 {
+        ok_or_err(Engine::with(|e| e.renderer().clear(r, g, b, a)), 0)
+    }
+
+    /// # Safety
+    /// `output_path` must be a valid, non-null, null-terminated C string.
+    #[unsafe(no_mangle)]
+    pub unsafe extern "C" fn dama_debug_screenshot(output_path: *const c_char) -> i32 {
+        let path = std::ffi::CStr::from_ptr(output_path).to_str().map_err(|e| format!("Invalid UTF-8: {e}"));
+        match path {
+            Ok(path) => ok_or_err(Engine::with(|e| e.screenshot(path)), 0),
+            Err(e) => { set_last_error(&e); -1 }
+        }
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub use native_ffi::*;

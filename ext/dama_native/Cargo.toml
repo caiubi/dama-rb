@@ -1,0 +1,24 @@
+[package]
+name = "dama_native"
+version = "0.1.0"
+edition = "2021"
+description = "GPU rendering backend for the dama-rb 2D game engine"
+license = "MIT"
+repository = "https://github.com/caiubi/dama-rb"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+wgpu = "28"
+bytemuck = { version = "1", features = ["derive"] }
+image = { version = "0.25", default-features = false, features = ["png"] }
+log = "0.4"
+
+# Native-only dependencies
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+pollster = "0.4"
+env_logger = "0.11"
+
+[dev-dependencies]
+tempfile = "3"

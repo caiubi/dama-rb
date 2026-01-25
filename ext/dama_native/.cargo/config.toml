@@ -1,0 +1,3 @@
+# Tests share a global engine state (Mutex), so they must run serially.
+[env]
+RUST_TEST_THREADS = "1"
