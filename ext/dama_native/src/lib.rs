@@ -61,6 +61,15 @@ pub mod native_ffi {
     }
 
     /// # Safety
+    /// `vertex_data` must point to at least `vertex_count * 8` valid `f32` values.
+    #[unsafe(no_mangle)]
+    pub unsafe extern "C" fn dama_render_vertices(vertex_data: *const f32, vertex_count: u32) -> i32 {
+        let count = vertex_count as usize;
+        let floats = std::slice::from_raw_parts(vertex_data, count * 8);
+        ok_or_err(Engine::with(|e| { e.renderer().submit_vertices(floats, count); Ok(()) }), 0)
+    }
+
+    /// # Safety
     /// `output_path` must be a valid, non-null, null-terminated C string.
     #[unsafe(no_mangle)]
     pub unsafe extern "C" fn dama_debug_screenshot(output_path: *const c_char) -> i32 {

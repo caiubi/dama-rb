@@ -1,19 +1,37 @@
 pub mod screenshot;
 pub mod shape_renderer;
+pub mod text_renderer;
 
-use shape_renderer::ShapeRenderer;
+use shape_renderer::{ShapeRenderer, Vertex};
+use text_renderer::TextRenderer;
+
+/// A batch of vertices grouped by texture and shader handle.
+struct VertexBatch {
+    texture_handle: u64,
+    shader_handle: u64,
+    vertices: Vec<Vertex>,
+}
 
 /// Core wgpu renderer. Manages GPU device, queue, render targets,
-/// and renders vertices for shape drawing.
+/// and batches vertices by texture for efficient draw calls.
 pub struct Renderer {
     device: wgpu::Device,
     queue: wgpu::Queue,
     width: u32,
     height: u32,
+    /// Logical resolution (what the game developer uses for coordinates).
+    /// May differ from width/height on HiDPI displays.
+    logical_width: u32,
+    logical_height: u32,
     render_texture: Option<wgpu::Texture>,
     render_texture_view: Option<wgpu::TextureView>,
     surface_view: Option<wgpu::TextureView>,
     shape_renderer: Option<ShapeRenderer>,
+    text_renderer: Option<TextRenderer>,
+    pending_batches: Vec<VertexBatch>,
+    current_texture: u64,
+    current_shader: u64,
+    elapsed_time: f32,
 }
 
 impl Renderer {
@@ -54,14 +72,51 @@ impl Renderer {
             render_texture.create_view(&wgpu::TextureViewDescriptor::default());
 
         let shape_renderer = ShapeRenderer::new(&device, &queue, format);
+        let text_renderer = TextRenderer::new(&device, &queue, format, width, height);
 
         Ok(Self {
             device, queue, width, height,
+            logical_width: width, logical_height: height,
             render_texture: Some(render_texture),
             render_texture_view: Some(render_texture_view),
             surface_view: None,
             shape_renderer: Some(shape_renderer),
+            text_renderer: Some(text_renderer),
+            pending_batches: Vec::new(),
+            current_texture: 0,
+            current_shader: 0,
+            elapsed_time: 0.0,
         })
+    }
+
+    pub fn new_windowed(device: wgpu::Device, queue: wgpu::Queue, width: u32, height: u32) -> Self {
+        Self {
+            device, queue, width, height,
+            logical_width: width, logical_height: height,
+            render_texture: None,
+            render_texture_view: None,
+            surface_view: None,
+            shape_renderer: None,
+            text_renderer: None,
+            pending_batches: Vec::new(),
+            current_texture: 0,
+            current_shader: 0,
+            elapsed_time: 0.0,
+        }
+    }
+
+    pub fn set_surface_format(&mut self, format: wgpu::TextureFormat) {
+        self.shape_renderer = Some(ShapeRenderer::new(&self.device, &self.queue, format));
+        self.text_renderer = Some(TextRenderer::new(
+            &self.device, &self.queue, format, self.width, self.height,
+        ));
+    }
+
+    /// Update physical render dimensions (e.g., after Retina surface creation).
+    /// Logical dimensions (used for coordinate mapping) remain unchanged.
+    pub fn set_physical_size(&mut self, width: u32, height: u32) {
+        self.width = width;
+        self.height = height;
     }
 
     pub fn set_surface_view(&mut self, view: Option<wgpu::TextureView>) {
@@ -72,11 +127,74 @@ impl Renderer {
         self.surface_view.as_ref().or(self.render_texture_view.as_ref())
     }
 
-    pub fn begin_frame(&mut self, _delta_time: f32) -> Result<(), String> {
+    pub fn begin_frame(&mut self, delta_time: f32) -> Result<(), String> {
+        self.pending_batches.clear();
+        self.current_texture = 0;
+        self.current_shader = 0;
+        self.elapsed_time += delta_time;
+
+        // Update the uniform buffer with current time.
+        if let Some(ref sr) = self.shape_renderer {
+            sr.update_time(&self.queue, self.elapsed_time);
+        }
         Ok(())
     }
 
     pub fn end_frame(&mut self) -> Result<(), String> {
+        if let Some(ref mut tr) = self.text_renderer {
+            tr.prepare(&self.device, &self.queue)?;
+        }
+
+        let view = self.active_view().ok_or("No render target available")?;
+
+        let mut encoder = self.device.create_command_encoder(
+            &wgpu::CommandEncoderDescriptor { label: Some("frame_encoder") },
+        );
+
+        {
+            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("main_render_pass"),
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view,
+                    resolve_target: None,
+                    depth_slice: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Load,
+                        store: wgpu::StoreOp::Store,
+                    },
+                })],
+                depth_stencil_attachment: None,
+                timestamp_writes: None,
+                occlusion_query_set: None,
+                multiview_mask: None,
+            });
+
+            // Render vertex batches grouped by texture + shader.
+            if let Some(ref mut shape_renderer) = self.shape_renderer {
+                for batch in &self.pending_batches {
+                    shape_renderer.render_batch(
+                        &self.device,
+                        &mut render_pass,
+                        &batch.vertices,
+                        batch.texture_handle,
+                        batch.shader_handle,
+                    );
+                }
+            }
+
+            // Text overlays everything.
+            if let Some(ref self_tr) = self.text_renderer {
+                let _ = self_tr.render(&mut render_pass);
+            }
+        }
+
+        self.queue.submit(std::iter::once(encoder.finish()));
+        let _ = self.device.poll(wgpu::PollType::wait_indefinitely());
+
+        if let Some(ref mut tr) = self.text_renderer {
+            tr.clear();
+        }
+
         Ok(())
     }
 
@@ -110,6 +228,94 @@ impl Renderer {
 
         self.queue.submit(std::iter::once(encoder.finish()));
         Ok(())
+    }
+
+    /// Accept pre-decomposed vertices from Ruby.
+    /// Each vertex is 8 floats: [x, y, r, g, b, a, u, v] in pixel coordinates.
+    pub fn submit_vertices(&mut self, floats: &[f32], vertex_count: usize) {
+        // Use logical dimensions for NDC conversion — game coordinates are in logical pixels.
+        let w = self.logical_width as f32;
+        let h = self.logical_height as f32;
+        let tex = self.current_texture;
+        let shd = self.current_shader;
+
+        // Find or create a batch for the current texture + shader.
+        let batch = self.pending_batches.iter_mut()
+            .rfind(|b| b.texture_handle == tex && b.shader_handle == shd);
+
+        let batch = match batch {
+            Some(b) => b,
+            None => {
+                self.pending_batches.push(VertexBatch {
+                    texture_handle: tex,
+                    shader_handle: shd,
+                    vertices: Vec::new(),
+                });
+                self.pending_batches.last_mut().unwrap()
+            }
+        };
+
+        for i in 0..vertex_count {
+            let base = i * 8;
+            let px = floats[base];
+            let py = floats[base + 1];
+
+            batch.vertices.push(Vertex {
+                position: [
+                    (px / w) * 2.0 - 1.0,
+                    1.0 - (py / h) * 2.0,
+                ],
+                color: [
+                    floats[base + 2],
+                    floats[base + 3],
+                    floats[base + 4],
+                    floats[base + 5],
+                ],
+                uv: [
+                    floats[base + 6],
+                    floats[base + 7],
+                ],
+            });
+        }
+    }
+
+    /// Set the current texture for subsequent vertex submissions.
+    /// handle=0 means no texture (white pixel default).
+    pub fn set_current_texture(&mut self, handle: u64) {
+        self.current_texture = handle;
+    }
+
+    /// Load a texture from raw image bytes. Returns a handle.
+    pub fn load_texture(&mut self, data: &[u8]) -> Result<u64, String> {
+        let sr = self.shape_renderer.as_mut()
+            .ok_or("Shape renderer not initialized")?;
+        sr.load_texture(&self.device, &self.queue, data)
+    }
+
+    /// Unload a previously loaded texture.
+    pub fn unload_texture(&mut self, handle: u64) {
+        if let Some(ref mut sr) = self.shape_renderer {
+            sr.unload_texture(handle);
+        }
+    }
+
+    pub fn draw_text(
+        &mut self, text: &str, x: f32, y: f32, size: f32,
+        r: f32, g: f32, b: f32, a: f32,
+        font_family: Option<&str>,
+    ) {
+        if let Some(ref mut tr) = self.text_renderer {
+            let scale_x = self.width as f32 / self.logical_width as f32;
+            let scale_y = self.height as f32 / self.logical_height as f32;
+            tr.queue_text(text, x * scale_x, y * scale_y, size * scale_x, r, g, b, a, font_family);
+        }
+    }
+
+    /// Load custom font data into the text renderer's font system.
+    pub fn load_font(&mut self, data: Vec<u8>) {
+        if let Some(ref mut tr) = self.text_renderer {
+            tr.load_font(data);
+        }
     }
 
     pub fn screenshot(&self, path: &str) -> Result<(), String> {
