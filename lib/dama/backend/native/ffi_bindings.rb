@@ -41,6 +41,9 @@ module Dama
         attach_function :dama_render_clear, %i[float float float float], :int32
         attach_function :dama_render_vertices, %i[pointer uint32], :int32
         attach_function :dama_render_set_texture, [:uint64], :int32
+        attach_function :dama_render_text,
+                        %i[string float float float
+                           float float float float], :int32
       end
     end
   end

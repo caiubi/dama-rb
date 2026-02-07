@@ -93,3 +93,23 @@ fn test_render_vertices_rect() {
 
     dama_native::dama_engine_shutdown();
 }
+
+#[test]
+fn test_render_text_and_screenshot() {
+    dama_native::dama_engine_init_headless(200, 100);
+    dama_native::dama_render_clear(0.0, 0.0, 0.0, 1.0);
+    dama_native::dama_engine_begin_frame();
+    let text = CString::new("Hello").unwrap();
+    assert_eq!(unsafe { dama_native::dama_render_text(text.as_ptr(), 10.0, 10.0, 24.0, 1.0, 1.0, 1.0, 1.0) }, 0);
+    dama_native::dama_engine_end_frame();
+
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("text.png");
+    let c_path = CString::new(path.to_str().unwrap()).unwrap();
+    unsafe { dama_native::dama_debug_screenshot(c_path.as_ptr()) };
+
+    let img = image::open(&path).unwrap().to_rgba8();
+    assert!(img.pixels().any(|p| p.0[0] > 30 || p.0[1] > 30 || p.0[2] > 30));
+
+    dama_native::dama_engine_shutdown();
+}

@@ -11,7 +11,7 @@ use engine::Engine;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod native_ffi {
     use super::*;
-    use std::ffi::CString;
+    use std::ffi::{CStr, CString};
     use std::os::raw::c_char;
 
     thread_local! {
@@ -70,10 +70,26 @@ pub mod native_ffi {
     }
 
     /// # Safety
+    /// `text` must be a valid, non-null, null-terminated C string.
+    #[unsafe(no_mangle)]
+    pub unsafe extern "C" fn dama_render_text(text: *const c_char, x: f32, y: f32, size: f32, r: f32, g: f32, b: f32, a: f32) -> i32 {
+        let text_str = CStr::from_ptr(text).to_str().map_err(|e| format!("Invalid UTF-8: {e}"));
+        match text_str {
+            Ok(s) => ok_or_err(Engine::with(|e| { e.renderer().draw_text(s, x, y, size, r, g, b, a, None); Ok(()) }), 0),
+            Err(e) => { set_last_error(&e); -1 }
+        }
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn dama_render_set_texture(handle: u64) -> i32 {
+        ok_or_err(Engine::with(|e| { e.renderer().set_current_texture(handle); Ok(()) }), 0)
+    }
+
+    /// # Safety
     /// `output_path` must be a valid, non-null, null-terminated C string.
     #[unsafe(no_mangle)]
     pub unsafe extern "C" fn dama_debug_screenshot(output_path: *const c_char) -> i32 {
-        let path = std::ffi::CStr::from_ptr(output_path).to_str().map_err(|e| format!("Invalid UTF-8: {e}"));
+        let path = CStr::from_ptr(output_path).to_str().map_err(|e| format!("Invalid UTF-8: {e}"));
         match path {
             Ok(path) => ok_or_err(Engine::with(|e| e.screenshot(path)), 0),
             Err(e) => { set_last_error(&e); -1 }

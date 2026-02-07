@@ -68,6 +68,12 @@ module Dama
         vertex_batch.push(Geometry::Circle.vertices(cx:, cy:, radius:, r:, g:, b:, a:, segments:))
       end
 
+      def draw_text(text:, x:, y:, size:, color: Dama::Colors::WHITE, r: color.r, g: color.g, b: color.b, a: color.a)
+        vertex_batch.flush(bindings:)
+        result = bindings.dama_render_text(text, x, y, size, r, g, b, a)
+        check_result(result:)
+      end
+
       private
 
       attr_reader :bindings, :vertex_batch

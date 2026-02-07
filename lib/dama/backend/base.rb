@@ -47,6 +47,10 @@ module Dama
       def draw_circle(cx:, cy:, radius:, color: Dama::Colors::WHITE, r: color.r, g: color.g, b: color.b, a: color.a, filled: true, segments: 32)
         raise NotImplementedError
       end
+
+      def draw_text(text:, x:, y:, size:, color: Dama::Colors::WHITE, r: color.r, g: color.g, b: color.b, a: color.a)
+        raise NotImplementedError
+      end
     end
   end
 end
