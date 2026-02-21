@@ -44,6 +44,14 @@ module Dama
         attach_function :dama_render_text,
                         %i[string float float float
                            float float float float], :int32
+
+        # --- Input ---
+        attach_function :dama_input_key_pressed, [:uint32], :int32
+        attach_function :dama_input_key_just_pressed, [:uint32], :int32
+        attach_function :dama_input_key_just_released, [:uint32], :int32
+        attach_function :dama_input_mouse_x, [], :float
+        attach_function :dama_input_mouse_y, [], :float
+        attach_function :dama_input_mouse_button_pressed, [:uint32], :int32
       end
     end
   end

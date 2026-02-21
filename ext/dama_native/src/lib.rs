@@ -85,6 +85,21 @@ pub mod native_ffi {
         ok_or_err(Engine::with(|e| { e.renderer().set_current_texture(handle); Ok(()) }), 0)
     }
 
+    // Input stubs — windowed input tracking not yet implemented.
+    // These provide the FFI surface so Ruby can bind them early.
+    #[unsafe(no_mangle)]
+    pub extern "C" fn dama_input_key_pressed(_key_code: u32) -> i32 { 0 }
+    #[unsafe(no_mangle)]
+    pub extern "C" fn dama_input_key_just_pressed(_key_code: u32) -> i32 { 0 }
+    #[unsafe(no_mangle)]
+    pub extern "C" fn dama_input_key_just_released(_key_code: u32) -> i32 { 0 }
+    #[unsafe(no_mangle)]
+    pub extern "C" fn dama_input_mouse_x() -> f32 { 0.0 }
+    #[unsafe(no_mangle)]
+    pub extern "C" fn dama_input_mouse_y() -> f32 { 0.0 }
+    #[unsafe(no_mangle)]
+    pub extern "C" fn dama_input_mouse_button_pressed(_button: u32) -> i32 { 0 }
+
     /// # Safety
     /// `output_path` must be a valid, non-null, null-terminated C string.
     #[unsafe(no_mangle)]

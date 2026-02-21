@@ -74,6 +74,30 @@ module Dama
         check_result(result:)
       end
 
+      def key_pressed?(key_code:)
+        bindings.dama_input_key_pressed(key_code) == 1
+      end
+
+      def key_just_pressed?(key_code:)
+        bindings.dama_input_key_just_pressed(key_code) == 1
+      end
+
+      def key_just_released?(key_code:)
+        bindings.dama_input_key_just_released(key_code) == 1
+      end
+
+      def mouse_x
+        bindings.dama_input_mouse_x
+      end
+
+      def mouse_y
+        bindings.dama_input_mouse_y
+      end
+
+      def mouse_button_pressed?(button:)
+        bindings.dama_input_mouse_button_pressed(button) == 1
+      end
+
       private
 
       attr_reader :bindings, :vertex_batch

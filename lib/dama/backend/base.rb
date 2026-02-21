@@ -51,6 +51,30 @@ module Dama
       def draw_text(text:, x:, y:, size:, color: Dama::Colors::WHITE, r: color.r, g: color.g, b: color.b, a: color.a)
         raise NotImplementedError
       end
+
+      def key_pressed?(key_code:)
+        raise NotImplementedError
+      end
+
+      def key_just_pressed?(key_code:)
+        raise NotImplementedError
+      end
+
+      def key_just_released?(key_code:)
+        raise NotImplementedError
+      end
+
+      def mouse_x
+        raise NotImplementedError
+      end
+
+      def mouse_y
+        raise NotImplementedError
+      end
+
+      def mouse_button_pressed?(button:)
+        raise NotImplementedError
+      end
     end
   end
 end
