@@ -113,3 +113,22 @@ fn test_render_text_and_screenshot() {
 
     dama_native::dama_engine_shutdown();
 }
+
+#[test]
+fn test_poll_events_headless() {
+    dama_native::dama_engine_init_headless(64, 64);
+    assert_eq!(dama_native::dama_engine_poll_events(), 0);
+    dama_native::dama_engine_shutdown();
+}
+
+#[test]
+fn test_delta_time_and_frame_count() {
+    dama_native::dama_engine_init_headless(64, 64);
+    assert_eq!(dama_native::dama_engine_frame_count(), 0);
+    dama_native::dama_engine_begin_frame();
+    dama_native::dama_engine_end_frame();
+    assert_eq!(dama_native::dama_engine_frame_count(), 1);
+    let dt = dama_native::dama_engine_delta_time();
+    assert!((0.0..1.0).contains(&dt));
+    dama_native::dama_engine_shutdown();
+}

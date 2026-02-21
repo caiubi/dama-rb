@@ -2,6 +2,7 @@
 
 pub mod engine;
 pub mod renderer;
+pub mod window;
 
 use engine::Engine;
 
@@ -35,8 +36,27 @@ pub mod native_ffi {
         ok_or_err(Engine::init_headless(width, height), 0)
     }
 
+    /// # Safety
+    /// `title` must be a valid, non-null, null-terminated C string.
+    #[unsafe(no_mangle)]
+    pub unsafe extern "C" fn dama_engine_init(width: u32, height: u32, title: *const c_char) -> i32 {
+        let _ = env_logger::try_init();
+        let title = CStr::from_ptr(title).to_str().unwrap_or("dama");
+        ok_or_err(Engine::init_windowed(width, height, title), 0)
+    }
+
     #[unsafe(no_mangle)]
     pub extern "C" fn dama_engine_shutdown() -> i32 { ok_or_err(Engine::shutdown(), 0) }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn dama_engine_poll_events() -> i32 {
+        let is_windowed = Engine::with(|e| Ok(e.window_state().is_some())).unwrap_or(false);
+        if !is_windowed { return 0; }
+        match Engine::pump_events() {
+            Ok(true) => 1, Ok(false) => 0,
+            Err(e) => { set_last_error(&e); -1 }
+        }
+    }
 
     #[unsafe(no_mangle)]
     pub extern "C" fn dama_engine_begin_frame() -> i32 { ok_or_err(Engine::with(|e| e.begin_frame()), 0) }
@@ -85,20 +105,30 @@ pub mod native_ffi {
         ok_or_err(Engine::with(|e| { e.renderer().set_current_texture(handle); Ok(()) }), 0)
     }
 
-    // Input stubs — windowed input tracking not yet implemented.
-    // These provide the FFI surface so Ruby can bind them early.
     #[unsafe(no_mangle)]
-    pub extern "C" fn dama_input_key_pressed(_key_code: u32) -> i32 { 0 }
+    pub extern "C" fn dama_input_key_pressed(key_code: u32) -> i32 {
+        Engine::with(|e| Ok(e.window_state().map(|ws| ws.is_key_pressed(key_code)).unwrap_or(false))).unwrap_or(false) as i32
+    }
     #[unsafe(no_mangle)]
-    pub extern "C" fn dama_input_key_just_pressed(_key_code: u32) -> i32 { 0 }
+    pub extern "C" fn dama_input_key_just_pressed(key_code: u32) -> i32 {
+        Engine::with(|e| Ok(e.window_state().map(|ws| ws.is_key_just_pressed(key_code)).unwrap_or(false))).unwrap_or(false) as i32
+    }
     #[unsafe(no_mangle)]
-    pub extern "C" fn dama_input_key_just_released(_key_code: u32) -> i32 { 0 }
+    pub extern "C" fn dama_input_key_just_released(key_code: u32) -> i32 {
+        Engine::with(|e| Ok(e.window_state().map(|ws| ws.is_key_just_released(key_code)).unwrap_or(false))).unwrap_or(false) as i32
+    }
     #[unsafe(no_mangle)]
-    pub extern "C" fn dama_input_mouse_x() -> f32 { 0.0 }
+    pub extern "C" fn dama_input_mouse_x() -> f32 {
+        Engine::with(|e| Ok(e.window_state().map(|ws| ws.mouse_x()).unwrap_or(0.0))).unwrap_or(0.0)
+    }
     #[unsafe(no_mangle)]
-    pub extern "C" fn dama_input_mouse_y() -> f32 { 0.0 }
+    pub extern "C" fn dama_input_mouse_y() -> f32 {
+        Engine::with(|e| Ok(e.window_state().map(|ws| ws.mouse_y()).unwrap_or(0.0))).unwrap_or(0.0)
+    }
     #[unsafe(no_mangle)]
-    pub extern "C" fn dama_input_mouse_button_pressed(_button: u32) -> i32 { 0 }
+    pub extern "C" fn dama_input_mouse_button_pressed(button: u32) -> i32 {
+        Engine::with(|e| Ok(e.window_state().map(|ws| ws.is_mouse_button_pressed(button)).unwrap_or(false))).unwrap_or(false) as i32
+    }
 
     /// # Safety
     /// `output_path` must be a valid, non-null, null-terminated C string.
