@@ -1,0 +1,5 @@
+source "https://rubygems.org"
+
+# Point to the local dama gem (parent directory).
+# When published, this becomes: gem "dama", "~> 0.1"
+gem "dama", path: "../.."
