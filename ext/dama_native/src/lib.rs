@@ -105,6 +105,22 @@ pub mod native_ffi {
         ok_or_err(Engine::with(|e| { e.renderer().set_current_texture(handle); Ok(()) }), 0)
     }
 
+    /// # Safety
+    /// `data` must point to at least `length` valid bytes of PNG image data.
+    #[unsafe(no_mangle)]
+    pub unsafe extern "C" fn dama_asset_load_texture(data: *const u8, length: u32) -> u64 {
+        let bytes = std::slice::from_raw_parts(data, length as usize);
+        match Engine::with(|e| e.renderer().load_texture(bytes)) {
+            Ok(handle) => handle,
+            Err(e) => { set_last_error(&e); 0 }
+        }
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn dama_asset_unload_texture(handle: u64) -> i32 {
+        ok_or_err(Engine::with(|e| { e.renderer().unload_texture(handle); Ok(()) }), 0)
+    }
+
     #[unsafe(no_mangle)]
     pub extern "C" fn dama_input_key_pressed(key_code: u32) -> i32 {
         Engine::with(|e| Ok(e.window_state().map(|ws| ws.is_key_pressed(key_code)).unwrap_or(false))).unwrap_or(false) as i32

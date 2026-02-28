@@ -52,6 +52,22 @@ module Dama
         raise NotImplementedError
       end
 
+      def draw_sprite(texture_handle:, x:, y:, w:, h:, color: Dama::Colors::WHITE, r: color.r, g: color.g, b: color.b, a: color.a)
+        raise NotImplementedError
+      end
+
+      def load_texture(bytes:)
+        raise NotImplementedError
+      end
+
+      def load_texture_file(path:)
+        raise NotImplementedError
+      end
+
+      def unload_texture(handle:)
+        raise NotImplementedError
+      end
+
       def key_pressed?(key_code:)
         raise NotImplementedError
       end

@@ -74,6 +74,36 @@ module Dama
         check_result(result:)
       end
 
+      def draw_sprite(texture_handle:, x:, y:, w:, h:, color: Dama::Colors::WHITE, r: color.r, g: color.g, b: color.b, a: color.a)
+        # Flush any untextured vertices, switch texture, push sprite, flush, reset.
+        vertex_batch.flush(bindings:)
+        check_result(result: bindings.dama_render_set_texture(texture_handle))
+        vertex_batch.push(Geometry::Sprite.vertices(x:, y:, w:, h:, r:, g:, b:, a:))
+        vertex_batch.flush(bindings:)
+        check_result(result: bindings.dama_render_set_texture(0))
+      end
+
+      def load_texture(bytes:)
+        ptr = FFI::MemoryPointer.new(:uint8, bytes.bytesize)
+        ptr.put_bytes(0, bytes)
+        handle = bindings.dama_asset_load_texture(ptr, bytes.bytesize)
+        raise "Failed to load texture" if handle.zero?
+
+        handle
+      end
+
+      def load_texture_file(path:)
+        load_texture(bytes: File.binread(path))
+      end
+
+      def unload_texture(handle:)
+        check_result(result: bindings.dama_asset_unload_texture(handle))
+      end
+
+      def screenshot(output_path:)
+        check_result(result: bindings.dama_debug_screenshot(output_path))
+      end
+
       def key_pressed?(key_code:)
         bindings.dama_input_key_pressed(key_code) == 1
       end

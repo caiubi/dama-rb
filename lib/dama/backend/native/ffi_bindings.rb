@@ -45,6 +45,10 @@ module Dama
                         %i[string float float float
                            float float float float], :int32
 
+        # --- Assets ---
+        attach_function :dama_asset_load_texture, %i[pointer uint32], :uint64
+        attach_function :dama_asset_unload_texture, [:uint64], :int32
+
         # --- Input ---
         attach_function :dama_input_key_pressed, [:uint32], :int32
         attach_function :dama_input_key_just_pressed, [:uint32], :int32
@@ -52,6 +56,9 @@ module Dama
         attach_function :dama_input_mouse_x, [], :float
         attach_function :dama_input_mouse_y, [], :float
         attach_function :dama_input_mouse_button_pressed, [:uint32], :int32
+
+        # --- Debug ---
+        attach_function :dama_debug_screenshot, [:string], :int32
       end
     end
   end

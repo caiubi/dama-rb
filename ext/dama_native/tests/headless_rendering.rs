@@ -132,3 +132,50 @@ fn test_delta_time_and_frame_count() {
     assert!((0.0..1.0).contains(&dt));
     dama_native::dama_engine_shutdown();
 }
+
+/// Load a PNG texture from bytes, render a textured quad, verify pixels.
+#[test]
+fn test_load_texture_and_render_sprite() {
+    dama_native::dama_engine_init_headless(100, 100);
+    dama_native::dama_render_clear(0.0, 0.0, 0.0, 1.0);
+
+    // Create a 2x2 PNG in memory: red, green, blue, white pixels.
+    let mut img = image::RgbaImage::new(2, 2);
+    img.put_pixel(0, 0, image::Rgba([255, 0, 0, 255]));
+    img.put_pixel(1, 0, image::Rgba([0, 255, 0, 255]));
+    img.put_pixel(0, 1, image::Rgba([0, 0, 255, 255]));
+    img.put_pixel(1, 1, image::Rgba([255, 255, 255, 255]));
+    let mut png_bytes: Vec<u8> = Vec::new();
+    img.write_to(&mut std::io::Cursor::new(&mut png_bytes), image::ImageFormat::Png).unwrap();
+
+    let handle = unsafe { dama_native::dama_asset_load_texture(png_bytes.as_ptr(), png_bytes.len() as u32) };
+    assert!(handle > 0, "texture handle should be > 0");
+
+    dama_native::dama_engine_begin_frame();
+    dama_native::dama_render_set_texture(handle);
+
+    let vertices: Vec<f32> = vec![
+        0.0,   0.0,   1.0, 1.0, 1.0, 1.0, 0.0, 0.0,
+        100.0, 0.0,   1.0, 1.0, 1.0, 1.0, 1.0, 0.0,
+        0.0,   100.0, 1.0, 1.0, 1.0, 1.0, 0.0, 1.0,
+        100.0, 0.0,   1.0, 1.0, 1.0, 1.0, 1.0, 0.0,
+        100.0, 100.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+        0.0,   100.0, 1.0, 1.0, 1.0, 1.0, 0.0, 1.0,
+    ];
+    unsafe { dama_native::dama_render_vertices(vertices.as_ptr(), 6) };
+
+    dama_native::dama_render_set_texture(0);
+    dama_native::dama_engine_end_frame();
+
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("sprite.png");
+    let c_path = CString::new(path.to_str().unwrap()).unwrap();
+    unsafe { dama_native::dama_debug_screenshot(c_path.as_ptr()) };
+
+    let result = image::open(&path).unwrap().to_rgba8();
+    let tl = result.get_pixel(25, 25).0;
+    assert!(tl[0] > 150, "top-left should be red-ish: {:?}", tl);
+
+    dama_native::dama_asset_unload_texture(handle);
+    dama_native::dama_engine_shutdown();
+}
