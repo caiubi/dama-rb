@@ -37,6 +37,13 @@ module Dama
         backend.draw_text(text: content.to_s, x: sx, y: sy, size: size * zoom_factor, r:, g:, b:, a:)
       end
 
+      def sprite(texture_handle, x, y, w, h, color: Dama::Colors::WHITE, r: color.r, g: color.g, b: color.b, a: color.a)
+        sx, sy = apply_camera(x, y)
+        sw = w * zoom_factor
+        sh = h * zoom_factor
+        backend.draw_sprite(texture_handle:, x: sx, y: sy, w: sw, h: sh, r:, g:, b:, a:)
+      end
+
       def method_missing(method_name, ...)
         return super unless node.respond_to?(method_name)
 
