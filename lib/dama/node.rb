@@ -48,12 +48,21 @@ module Dama
         @texture_declarations ||= {}
       end
 
-      attr_reader :draw_block
+      # Declare a physics body for this node.
+      # The body is created during scene composition if the scene has physics enabled.
+      def physics_body(**options)
+        @physics_body_options = options
+      end
+
+      attr_reader :physics_body_options, :draw_block
     end
+
+    attr_accessor :physics
 
     def initialize(**values)
       @components = {}
       @texture_handles = {}
+      @physics = nil
       initialize_components(values)
       initialize_attributes(values)
     end

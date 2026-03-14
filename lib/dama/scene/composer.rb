@@ -35,6 +35,10 @@ module Dama
         scene.enable_camera(**)
       end
 
+      def physics(gravity: [0.0, 0.0])
+        scene.enable_physics(gravity_x: gravity[0], gravity_y: gravity[1])
+      end
+
       def group(name, &)
         scene_graph.add_group(name:)
         previous_group = current_group
