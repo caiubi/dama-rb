@@ -128,6 +128,26 @@ module Dama
         bindings.dama_input_mouse_button_pressed(button) == 1
       end
 
+      def load_sound(path:)
+        handle = bindings.dama_audio_load_sound(path)
+        raise "Failed to load sound: #{bindings.dama_engine_last_error}" if handle.zero?
+
+        handle
+      end
+
+      def play_sound(handle:, volume: 1.0, loop: false)
+        looping = loop ? 1 : 0
+        check_result(result: bindings.dama_audio_play_sound(handle, volume, looping))
+      end
+
+      def stop_all_sounds
+        check_result(result: bindings.dama_audio_stop_all)
+      end
+
+      def unload_sound(handle:)
+        check_result(result: bindings.dama_audio_unload_sound(handle))
+      end
+
       private
 
       attr_reader :bindings, :vertex_batch

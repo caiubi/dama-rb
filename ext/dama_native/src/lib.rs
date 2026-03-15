@@ -4,6 +4,9 @@ pub mod engine;
 pub mod renderer;
 pub mod window;
 
+#[cfg(not(target_arch = "wasm32"))]
+pub mod audio;
+
 use engine::Engine;
 
 // ===========================================================================
@@ -155,6 +158,36 @@ pub mod native_ffi {
             Ok(path) => ok_or_err(Engine::with(|e| e.screenshot(path)), 0),
             Err(e) => { set_last_error(&e); -1 }
         }
+    }
+
+    // --- Audio ---
+
+    /// # Safety
+    /// `path` must be a valid, non-null, null-terminated C string pointing to an audio file.
+    #[unsafe(no_mangle)]
+    pub unsafe extern "C" fn dama_audio_load_sound(path: *const c_char) -> u64 {
+        let path = CStr::from_ptr(path).to_str().unwrap_or("");
+        match crate::audio::load_sound(path) {
+            Ok(handle) => handle,
+            Err(e) => { set_last_error(&e); 0 }
+        }
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn dama_audio_play_sound(handle: u64, volume: f32, looping: i32) -> i32 {
+        ok_or_err(crate::audio::play_sound(handle, volume, looping != 0), 0)
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn dama_audio_stop_all() -> i32 {
+        crate::audio::stop_all();
+        0
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn dama_audio_unload_sound(handle: u64) -> i32 {
+        crate::audio::unload_sound(handle);
+        0
     }
 }
 

@@ -21,6 +21,7 @@ log = "0.4"
 winit = "0.30"
 pollster = "0.4"
 env_logger = "0.11"
+rodio = { version = "0.20", default-features = false, features = ["wav", "vorbis", "mp3"] }
 
 [dev-dependencies]
 tempfile = "3"

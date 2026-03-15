@@ -68,6 +68,10 @@ module Dama
         raise NotImplementedError
       end
 
+      def screenshot(output_path:)
+        raise NotImplementedError
+      end
+
       def key_pressed?(key_code:)
         raise NotImplementedError
       end
@@ -89,6 +93,22 @@ module Dama
       end
 
       def mouse_button_pressed?(button:)
+        raise NotImplementedError
+      end
+
+      def load_sound(path:)
+        raise NotImplementedError
+      end
+
+      def play_sound(handle:, volume: 1.0, loop: false)
+        raise NotImplementedError
+      end
+
+      def stop_all_sounds
+        raise NotImplementedError
+      end
+
+      def unload_sound(handle:)
         raise NotImplementedError
       end
     end
