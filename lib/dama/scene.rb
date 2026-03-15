@@ -1,6 +1,21 @@
 module Dama
   # Base class for game scenes. Scenes have a compose/enter/update
   # lifecycle and manage a scene graph of nodes.
+  #
+  # Example:
+  #   class Level1 < Dama::Scene
+  #     sound :jump, path: "assets/sfx/jump.wav"
+  #
+  #     compose do
+  #       camera viewport_width: 800, viewport_height: 600
+  #       add Player, as: :hero
+  #     end
+  #
+  #     update do |dt, input|
+  #       hero.transform.x += 100 * dt if input.right?
+  #       play(:jump) if input.space?
+  #     end
+  #   end
   class Scene
     class << self
       def compose(&block)
@@ -13,6 +28,16 @@ module Dama
 
       def update(&block)
         @update_block = block
+      end
+
+      # Declare a sound asset at the class level.
+      # Loaded automatically during scene composition.
+      def sound(name, path:)
+        sound_declarations[name] = path
+      end
+
+      def sound_declarations
+        @sound_declarations ||= {}
       end
 
       attr_reader :compose_block, :enter_block, :update_block
@@ -28,8 +53,14 @@ module Dama
       @scene_graph = SceneGraph::Tree.new
       @named_nodes = {}
       @camera = nil
+      @audio = nil
       @physics_world = nil
       @collision_handlers = {}
+    end
+
+    # Play a sound declared via the `sound` class DSL.
+    def play(name)
+      audio&.play(name)
     end
 
     def enable_camera(viewport_width:, viewport_height:, **)
@@ -59,6 +90,7 @@ module Dama
     end
 
     def perform_compose
+      load_sounds
       return unless self.class.compose_block
 
       composer = Scene::Composer.new(scene_graph:, registry:, scene: self)
@@ -116,8 +148,19 @@ module Dama
     private
 
     attr_reader :registry, :scene_graph, :named_nodes, :asset_cache,
-                :scene_switcher, :backend, :physics_world,
+                :scene_switcher, :backend, :audio, :physics_world,
                 :collision_handlers
+
+    # Load all class-level sound declarations via Audio.
+    def load_sounds
+      return if self.class.sound_declarations.empty?
+      return unless backend
+
+      @audio = Audio.new(backend:)
+      self.class.sound_declarations.each do |name, path|
+        audio.load(name:, path:)
+      end
+    end
 
     COLLIDER_FACTORIES = {
       rect: ->(opts) { Physics::Collider.rect(width: opts.fetch(:width), height: opts.fetch(:height)) },
