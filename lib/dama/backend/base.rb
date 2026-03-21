@@ -115,6 +115,18 @@ module Dama
       def unload_sound(handle:)
         raise NotImplementedError
       end
+
+      def load_shader(source:)
+        raise NotImplementedError
+      end
+
+      def unload_shader(handle:)
+        raise NotImplementedError
+      end
+
+      def set_shader(handle:)
+        raise NotImplementedError
+      end
     end
   end
 end

@@ -36,6 +36,7 @@ pub struct Renderer {
 
 impl Renderer {
     // Headless mode is native-only (tests).
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn new_headless(width: u32, height: u32) -> Result<Self, String> {
         let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
 
@@ -117,6 +118,13 @@ impl Renderer {
     pub fn set_physical_size(&mut self, width: u32, height: u32) {
         self.width = width;
         self.height = height;
+    }
+
+    /// Set logical dimensions separately from physical (for HiDPI).
+    /// Game coordinates use logical; GPU renders at physical.
+    pub fn set_logical_size(&mut self, width: u32, height: u32) {
+        self.logical_width = width;
+        self.logical_height = height;
     }
 
     pub fn set_surface_view(&mut self, view: Option<wgpu::TextureView>) {
@@ -296,6 +304,26 @@ impl Renderer {
     pub fn unload_texture(&mut self, handle: u64) {
         if let Some(ref mut sr) = self.shape_renderer {
             sr.unload_texture(handle);
+        }
+    }
+
+    /// Set the current shader for subsequent vertex submissions.
+    /// handle=0 means default shader.
+    pub fn set_current_shader(&mut self, handle: u64) {
+        self.current_shader = handle;
+    }
+
+    /// Load a custom WGSL fragment shader. Returns a handle.
+    pub fn load_shader(&mut self, source: &str) -> Result<u64, String> {
+        let sr = self.shape_renderer.as_mut()
+            .ok_or("Shape renderer not initialized")?;
+        Ok(sr.load_shader(source))
+    }
+
+    /// Unload a previously loaded shader.
+    pub fn unload_shader(&mut self, handle: u64) {
+        if let Some(ref mut sr) = self.shape_renderer {
+            sr.unload_shader(handle);
         }
     }
 

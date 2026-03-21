@@ -32,6 +32,18 @@ module Dama
         define_method(name) { texture_handles.fetch(name) }
       end
 
+      # Declare a custom WGSL fragment shader with a named accessor.
+      # The shader is loaded via the backend during scene composition
+      # and the handle is accessible as a method on the node.
+      #
+      # Example:
+      #   shader :glow, path: "assets/shaders/glow.wgsl"
+      #   shader :invert, source: "@fragment\nfn fs_main(...) { ... }"
+      def shader(name, path: nil, source: nil)
+        shader_declarations[name] = { path:, source: }
+        define_method(name) { shader_handles.fetch(name) }
+      end
+
       def draw(&block)
         @draw_block = block
       end
@@ -48,6 +60,10 @@ module Dama
         @texture_declarations ||= {}
       end
 
+      def shader_declarations
+        @shader_declarations ||= {}
+      end
+
       # Declare a physics body for this node.
       # The body is created during scene composition if the scene has physics enabled.
       def physics_body(**options)
@@ -62,6 +78,7 @@ module Dama
     def initialize(**values)
       @components = {}
       @texture_handles = {}
+      @shader_handles = {}
       @physics = nil
       initialize_components(values)
       initialize_attributes(values)
@@ -82,9 +99,25 @@ module Dama
       texture_handles.clear
     end
 
+    # Load all declared shaders via the backend.
+    def load_shaders(backend:)
+      self.class.shader_declarations.each do |name, declaration|
+        source = declaration[:source] || File.read(declaration.fetch(:path))
+        shader_handles[name] = backend.load_shader(source:)
+      end
+    end
+
+    # Unload all declared shaders via the backend.
+    def unload_shaders(backend:)
+      shader_handles.each_value do |handle|
+        backend.unload_shader(handle:)
+      end
+      shader_handles.clear
+    end
+
     private
 
-    attr_reader :components, :texture_handles
+    attr_reader :components, :texture_handles, :shader_handles
 
     def initialize_components(values)
       self.class.component_slots.each do |name, slot|

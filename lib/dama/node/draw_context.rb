@@ -6,6 +6,9 @@ module Dama
     #
     # When a camera is present, all coordinates are automatically
     # transformed from world space to screen space.
+    #
+    # Custom shaders can be applied to any shape via the `shader:` keyword:
+    #   rect(x, y, w, h, color: Dama::Colors::RED, shader: glow)
     class DrawContext
       def initialize(node:, backend:, camera: nil)
         @node = node
@@ -13,35 +16,41 @@ module Dama
         @camera = camera
       end
 
-      def rect(x, y, w, h, color: Dama::Colors::WHITE, r: color.r, g: color.g, b: color.b, a: color.a)
+      def rect(x, y, w, h, color: Dama::Colors::WHITE, r: color.r, g: color.g, b: color.b, a: color.a, shader: nil)
         sx, sy = apply_camera(x, y)
         sw = w * zoom_factor
         sh = h * zoom_factor
-        backend.draw_rect(x: sx, y: sy, w: sw, h: sh, r:, g:, b:, a:)
+        with_shader(shader) { backend.draw_rect(x: sx, y: sy, w: sw, h: sh, r:, g:, b:, a:) }
       end
 
-      def triangle(x1, y1, x2, y2, x3, y3, color: Dama::Colors::WHITE, r: color.r, g: color.g, b: color.b, a: color.a)
+      def triangle(x1, y1, x2, y2, x3, y3, color: Dama::Colors::WHITE, r: color.r, g: color.g, b: color.b, a: color.a, shader: nil)
         sx1, sy1 = apply_camera(x1, y1)
         sx2, sy2 = apply_camera(x2, y2)
         sx3, sy3 = apply_camera(x3, y3)
-        backend.draw_triangle(x1: sx1, y1: sy1, x2: sx2, y2: sy2, x3: sx3, y3: sy3, r:, g:, b:, a:)
+        with_shader(shader) do
+          backend.draw_triangle(x1: sx1, y1: sy1, x2: sx2, y2: sy2, x3: sx3, y3: sy3, r:, g:, b:, a:)
+        end
       end
 
-      def circle(cx, cy, radius, color: Dama::Colors::WHITE, r: color.r, g: color.g, b: color.b, a: color.a, segments: 32)
+      def circle(cx, cy, radius, color: Dama::Colors::WHITE, r: color.r, g: color.g, b: color.b, a: color.a, segments: 32, shader: nil)
         sx, sy = apply_camera(cx, cy)
-        backend.draw_circle(cx: sx, cy: sy, radius: radius * zoom_factor, r:, g:, b:, a:, segments:)
+        with_shader(shader) do
+          backend.draw_circle(cx: sx, cy: sy, radius: radius * zoom_factor, r:, g:, b:, a:, segments:)
+        end
       end
 
-      def text(content, x, y, size: 24.0, color: Dama::Colors::WHITE, r: color.r, g: color.g, b: color.b, a: color.a)
+      def text(content, x, y, size: 24.0, color: Dama::Colors::WHITE, r: color.r, g: color.g, b: color.b, a: color.a, font: nil)
         sx, sy = apply_camera(x, y)
-        backend.draw_text(text: content.to_s, x: sx, y: sy, size: size * zoom_factor, r:, g:, b:, a:)
+        backend.draw_text(text: content.to_s, x: sx, y: sy, size: size * zoom_factor, r:, g:, b:, a:, font:)
       end
 
-      def sprite(texture_handle, x, y, w, h, color: Dama::Colors::WHITE, r: color.r, g: color.g, b: color.b, a: color.a)
+      def sprite(texture_handle, x, y, w, h, color: Dama::Colors::WHITE, r: color.r, g: color.g, b: color.b, a: color.a, shader: nil)
         sx, sy = apply_camera(x, y)
         sw = w * zoom_factor
         sh = h * zoom_factor
-        backend.draw_sprite(texture_handle:, x: sx, y: sy, w: sw, h: sh, r:, g:, b:, a:)
+        with_shader(shader) do
+          backend.draw_sprite(texture_handle:, x: sx, y: sy, w: sw, h: sh, r:, g:, b:, a:)
+        end
       end
 
       def method_missing(method_name, ...)
@@ -67,6 +76,16 @@ module Dama
 
       def zoom_factor
         camera ? camera.zoom : 1.0
+      end
+
+      # Wraps a draw call with shader activation/deactivation.
+      # If no shader is specified, the block executes unchanged.
+      def with_shader(shader_handle)
+        return yield unless shader_handle
+
+        backend.set_shader(handle: shader_handle)
+        yield
+        backend.set_shader(handle: 0)
       end
     end
   end

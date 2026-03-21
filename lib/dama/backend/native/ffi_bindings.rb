@@ -71,6 +71,11 @@ module Dama
         attach_function :dama_audio_play_sound, %i[uint64 float int32], :int32
         attach_function :dama_audio_stop_all, [], :int32
         attach_function :dama_audio_unload_sound, [:uint64], :int32
+
+        # --- Shaders ---
+        attach_function :dama_shader_load, [:string], :uint64
+        attach_function :dama_shader_unload, [:uint64], :int32
+        attach_function :dama_render_set_shader, [:uint64], :int32
       end
     end
   end

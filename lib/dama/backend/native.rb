@@ -156,6 +156,21 @@ module Dama
         check_result(result: bindings.dama_audio_unload_sound(handle))
       end
 
+      def load_shader(source:)
+        bindings.dama_shader_load(source)
+      end
+
+      def unload_shader(handle:)
+        check_result(result: bindings.dama_shader_unload(handle))
+      end
+
+      def set_shader(handle:)
+        # Flush pending vertices before changing shader to ensure
+        # they render with the current shader, not the new one.
+        vertex_batch.flush(bindings:)
+        check_result(result: bindings.dama_render_set_shader(handle))
+      end
+
       private
 
       attr_reader :bindings, :vertex_batch

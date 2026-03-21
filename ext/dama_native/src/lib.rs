@@ -92,6 +92,57 @@ pub mod native_ffi {
         ok_or_err(Engine::with(|e| { e.renderer().submit_vertices(floats, count); Ok(()) }), 0)
     }
 
+    #[unsafe(no_mangle)]
+    pub extern "C" fn dama_render_set_texture(handle: u64) -> i32 {
+        ok_or_err(Engine::with(|e| { e.renderer().set_current_texture(handle); Ok(()) }), 0)
+    }
+
+    /// # Safety
+    /// `data` must point to at least `length` valid bytes of PNG image data.
+    #[unsafe(no_mangle)]
+    pub unsafe extern "C" fn dama_asset_load_texture(data: *const u8, length: u32) -> u64 {
+        let bytes = std::slice::from_raw_parts(data, length as usize);
+        match Engine::with(|e| e.renderer().load_texture(bytes)) {
+            Ok(handle) => handle,
+            Err(e) => { set_last_error(&e); 0 }
+        }
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn dama_asset_unload_texture(handle: u64) -> i32 {
+        ok_or_err(Engine::with(|e| { e.renderer().unload_texture(handle); Ok(()) }), 0)
+    }
+
+    // --- Shader management ---
+
+    /// # Safety
+    /// `source` must be a valid null-terminated C string, or null (null is handled gracefully).
+    #[unsafe(no_mangle)]
+    pub unsafe extern "C" fn dama_shader_load(source: *const c_char) -> u64 {
+        if source.is_null() {
+            set_last_error("Null shader source pointer");
+            return 0;
+        }
+        let source_str = match CStr::from_ptr(source).to_str() {
+            Ok(s) => s,
+            Err(e) => { set_last_error(&format!("Invalid UTF-8 in shader source: {e}")); return 0; }
+        };
+        match Engine::with(|e| e.renderer().load_shader(source_str)) {
+            Ok(handle) => handle,
+            Err(e) => { set_last_error(&e); 0 }
+        }
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn dama_shader_unload(handle: u64) -> i32 {
+        ok_or_err(Engine::with(|e| { e.renderer().unload_shader(handle); Ok(()) }), 0)
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn dama_render_set_shader(handle: u64) -> i32 {
+        ok_or_err(Engine::with(|e| { e.renderer().set_current_shader(handle); Ok(()) }), 0)
+    }
+
     /// # Safety
     /// `text` must be a valid, non-null, null-terminated C string.
     #[unsafe(no_mangle)]
@@ -126,27 +177,6 @@ pub mod native_ffi {
             Err(e) => { set_last_error(&format!("Failed to read font: {e}")); return -1; }
         };
         ok_or_err(Engine::with(|e| { e.renderer().load_font(data); Ok(()) }), 0)
-    }
-
-    #[unsafe(no_mangle)]
-    pub extern "C" fn dama_render_set_texture(handle: u64) -> i32 {
-        ok_or_err(Engine::with(|e| { e.renderer().set_current_texture(handle); Ok(()) }), 0)
-    }
-
-    /// # Safety
-    /// `data` must point to at least `length` valid bytes of PNG image data.
-    #[unsafe(no_mangle)]
-    pub unsafe extern "C" fn dama_asset_load_texture(data: *const u8, length: u32) -> u64 {
-        let bytes = std::slice::from_raw_parts(data, length as usize);
-        match Engine::with(|e| e.renderer().load_texture(bytes)) {
-            Ok(handle) => handle,
-            Err(e) => { set_last_error(&e); 0 }
-        }
-    }
-
-    #[unsafe(no_mangle)]
-    pub extern "C" fn dama_asset_unload_texture(handle: u64) -> i32 {
-        ok_or_err(Engine::with(|e| { e.renderer().unload_texture(handle); Ok(()) }), 0)
     }
 
     #[unsafe(no_mangle)]

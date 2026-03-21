@@ -179,3 +179,54 @@ fn test_load_texture_and_render_sprite() {
     dama_native::dama_asset_unload_texture(handle);
     dama_native::dama_engine_shutdown();
 }
+
+#[test]
+fn test_custom_shader_load_and_render() {
+    dama_native::dama_engine_init_headless(64, 64);
+
+    // Load a custom fragment shader that tints everything green.
+    let shader_source = r#"
+@fragment
+fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
+    let tex_color = textureSample(t_diffuse, s_diffuse, in.uv);
+    return vec4<f32>(0.0, 1.0, 0.0, 1.0) * tex_color * in.color;
+}
+"#;
+    let c_source = CString::new(shader_source).unwrap();
+    let handle = unsafe { dama_native::dama_shader_load(c_source.as_ptr()) };
+    assert!(handle > 0, "shader handle should be > 0, got {}", handle);
+
+    // Render a white rect with the green tint shader.
+    dama_native::dama_engine_begin_frame();
+    dama_native::dama_render_clear(0.0, 0.0, 0.0, 1.0);
+    dama_native::dama_render_set_shader(handle);
+
+    // Draw a full-screen white rect via raw vertices.
+    let vertices: Vec<f32> = vec![
+        0.0,  0.0,  1.0, 1.0, 1.0, 1.0, 0.0, 0.0,
+        64.0, 0.0,  1.0, 1.0, 1.0, 1.0, 0.0, 0.0,
+        0.0,  64.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0,
+        64.0, 0.0,  1.0, 1.0, 1.0, 1.0, 0.0, 0.0,
+        64.0, 64.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0,
+        0.0,  64.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0,
+    ];
+    unsafe { dama_native::dama_render_vertices(vertices.as_ptr(), 6) };
+
+    dama_native::dama_render_set_shader(0);
+    dama_native::dama_engine_end_frame();
+
+    // Screenshot and verify green pixels.
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("shader_green.png");
+    let c_path = CString::new(path.to_str().unwrap()).unwrap();
+    unsafe { dama_native::dama_debug_screenshot(c_path.as_ptr()) };
+
+    let img = image::open(&path).unwrap().to_rgba8();
+    let center = img.get_pixel(32, 32).0;
+    assert!(center[1] > 200, "green channel at center should be > 200, got {}", center[1]);
+    assert!(center[0] < 50, "red channel at center should be < 50, got {}", center[0]);
+
+    // Cleanup.
+    dama_native::dama_shader_unload(handle);
+    dama_native::dama_engine_shutdown();
+}
