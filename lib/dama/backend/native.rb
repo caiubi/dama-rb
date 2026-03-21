@@ -68,10 +68,18 @@ module Dama
         vertex_batch.push(Geometry::Circle.vertices(cx:, cy:, radius:, r:, g:, b:, a:, segments:))
       end
 
-      def draw_text(text:, x:, y:, size:, color: Dama::Colors::WHITE, r: color.r, g: color.g, b: color.b, a: color.a)
+      def draw_text(text:, x:, y:, size:, color: Dama::Colors::WHITE, r: color.r, g: color.g, b: color.b, a: color.a, font: nil)
         vertex_batch.flush(bindings:)
-        result = bindings.dama_render_text(text, x, y, size, r, g, b, a)
+        result = if font
+                   bindings.dama_render_text_with_font(text, x, y, size, r, g, b, a, font)
+                 else
+                   bindings.dama_render_text(text, x, y, size, r, g, b, a)
+                 end
         check_result(result:)
+      end
+
+      def load_font(path:)
+        check_result(result: bindings.dama_font_load(path))
       end
 
       def draw_sprite(texture_handle:, x:, y:, w:, h:, color: Dama::Colors::WHITE, r: color.r, g: color.g, b: color.b, a: color.a)

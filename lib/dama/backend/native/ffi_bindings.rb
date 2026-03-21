@@ -60,6 +60,12 @@ module Dama
         # --- Debug ---
         attach_function :dama_debug_screenshot, [:string], :int32
 
+        # --- Fonts ---
+        attach_function :dama_font_load, [:string], :int32
+        attach_function :dama_render_text_with_font,
+                        %i[string float float float
+                           float float float float string], :int32
+
         # --- Audio ---
         attach_function :dama_audio_load_sound, [:string], :uint64
         attach_function :dama_audio_play_sound, %i[uint64 float int32], :int32

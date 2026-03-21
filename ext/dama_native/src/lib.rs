@@ -103,6 +103,31 @@ pub mod native_ffi {
         }
     }
 
+    /// # Safety
+    /// `text` and `font_family` must be valid, non-null, null-terminated C strings.
+    #[unsafe(no_mangle)]
+    pub unsafe extern "C" fn dama_render_text_with_font(
+        text: *const c_char, x: f32, y: f32, size: f32,
+        r: f32, g: f32, b: f32, a: f32,
+        font_family: *const c_char,
+    ) -> i32 {
+        let text_str = CStr::from_ptr(text).to_str().unwrap_or("");
+        let family = CStr::from_ptr(font_family).to_str().ok();
+        ok_or_err(Engine::with(|e| { e.renderer().draw_text(text_str, x, y, size, r, g, b, a, family); Ok(()) }), 0)
+    }
+
+    /// # Safety
+    /// `path` must be a valid, non-null, null-terminated C string pointing to a font file.
+    #[unsafe(no_mangle)]
+    pub unsafe extern "C" fn dama_font_load(path: *const c_char) -> i32 {
+        let path_str = CStr::from_ptr(path).to_str().unwrap_or("");
+        let data = match std::fs::read(path_str) {
+            Ok(d) => d,
+            Err(e) => { set_last_error(&format!("Failed to read font: {e}")); return -1; }
+        };
+        ok_or_err(Engine::with(|e| { e.renderer().load_font(data); Ok(()) }), 0)
+    }
+
     #[unsafe(no_mangle)]
     pub extern "C" fn dama_render_set_texture(handle: u64) -> i32 {
         ok_or_err(Engine::with(|e| { e.renderer().set_current_texture(handle); Ok(()) }), 0)

@@ -48,7 +48,11 @@ module Dama
         raise NotImplementedError
       end
 
-      def draw_text(text:, x:, y:, size:, color: Dama::Colors::WHITE, r: color.r, g: color.g, b: color.b, a: color.a)
+      def draw_text(text:, x:, y:, size:, color: Dama::Colors::WHITE, r: color.r, g: color.g, b: color.b, a: color.a, font: nil)
+        raise NotImplementedError
+      end
+
+      def load_font(path:)
         raise NotImplementedError
       end
 
