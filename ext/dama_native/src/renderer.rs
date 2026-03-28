@@ -32,6 +32,11 @@ pub struct Renderer {
     current_texture: u64,
     current_shader: u64,
     elapsed_time: f32,
+    /// Web-only: the wgpu Surface wrapping the HTML canvas.
+    #[cfg(target_arch = "wasm32")]
+    web_surface: Option<wgpu::Surface<'static>>,
+    #[cfg(target_arch = "wasm32")]
+    web_surface_texture: Option<wgpu::SurfaceTexture>,
 }
 
 impl Renderer {
@@ -103,6 +108,36 @@ impl Renderer {
             current_texture: 0,
             current_shader: 0,
             elapsed_time: 0.0,
+            #[cfg(target_arch = "wasm32")]
+            web_surface: None,
+            #[cfg(target_arch = "wasm32")]
+            web_surface_texture: None,
+        }
+    }
+
+    /// Store the web surface (called during async init on wasm).
+    #[cfg(target_arch = "wasm32")]
+    pub fn set_web_surface(&mut self, surface: wgpu::Surface<'static>) {
+        self.web_surface = Some(surface);
+    }
+
+    /// Acquire the next frame from the web surface.
+    #[cfg(target_arch = "wasm32")]
+    pub fn acquire_web_surface(&mut self) -> Result<(), String> {
+        let surface = self.web_surface.as_ref().ok_or("No web surface")?;
+        let texture = surface.get_current_texture()
+            .map_err(|e| format!("Failed to get web surface texture: {e}"))?;
+        let view = texture.texture.create_view(&wgpu::TextureViewDescriptor::default());
+        self.surface_view = Some(view);
+        self.web_surface_texture = Some(texture);
+        Ok(())
+    }
+
+    /// Present the web surface frame.
+    #[cfg(target_arch = "wasm32")]
+    pub fn present_web_surface(&mut self) {
+        if let Some(texture) = self.web_surface_texture.take() {
+            texture.present();
         }
     }
 
@@ -285,6 +320,176 @@ impl Renderer {
                 ],
             });
         }
+    }
+
+    /// Accept high-level draw commands from Ruby (web backend).
+    /// Each command starts with a float type tag, followed by shape-specific data.
+    /// Rust decomposes shapes into triangles — eliminating trig from Ruby/wasm.
+    ///
+    /// Command format:
+    ///   0 = Circle:     [0, cx, cy, radius, r, g, b, a, segments]  (9 floats)
+    ///   1 = Rect:       [1, x, y, w, h, r, g, b, a]               (9 floats)
+    ///   2 = Triangle:   [2, x1, y1, x2, y2, x3, y3, r, g, b, a]  (11 floats)
+    ///   3 = Sprite:     [3, handle, x, y, w, h, r, g, b, a, u0, v0, u1, v1] (14 floats)
+    ///   4 = SetTexture: [4, handle]                                 (2 floats)
+    ///   5 = SetShader:  [5, handle]                                 (2 floats)
+    pub fn submit_commands(&mut self, commands: &[f32]) {
+        const COMMAND_SIZES: [usize; 6] = [9, 9, 11, 14, 2, 2];
+
+        let mut cursor = 0;
+        while cursor < commands.len() {
+            let tag = commands[cursor] as usize;
+            if tag >= COMMAND_SIZES.len() {
+                break;
+            }
+
+            let size = COMMAND_SIZES[tag];
+            if cursor + size > commands.len() {
+                break;
+            }
+
+            let cmd = &commands[cursor..cursor + size];
+            match tag {
+                0 => self.decompose_circle(cmd),
+                1 => self.decompose_rect(cmd),
+                2 => self.decompose_triangle(cmd),
+                3 => self.decompose_sprite(cmd),
+                4 => self.current_texture = cmd[1] as u64,
+                5 => self.current_shader = cmd[1] as u64,
+                _ => {}
+            }
+
+            cursor += size;
+        }
+    }
+
+    /// Convert pixel coordinates to Normalized Device Coordinates.
+    fn pixel_to_ndc(&self, px: f32, py: f32) -> [f32; 2] {
+        let w = self.logical_width as f32;
+        let h = self.logical_height as f32;
+        [(px / w) * 2.0 - 1.0, 1.0 - (py / h) * 2.0]
+    }
+
+    /// Push a single vertex (in pixel coords) to the current texture+shader batch.
+    fn push_vertex(&mut self, px: f32, py: f32, r: f32, g: f32, b: f32, a: f32, u: f32, v: f32) {
+        let pos = self.pixel_to_ndc(px, py);
+        let tex = self.current_texture;
+        let shd = self.current_shader;
+
+        let batch = self.pending_batches.iter_mut()
+            .rfind(|b| b.texture_handle == tex && b.shader_handle == shd);
+
+        let batch = match batch {
+            Some(b) => b,
+            None => {
+                self.pending_batches.push(VertexBatch {
+                    texture_handle: tex,
+                    shader_handle: shd,
+                    vertices: Vec::new(),
+                });
+                self.pending_batches.last_mut().unwrap()
+            }
+        };
+
+        batch.vertices.push(Vertex {
+            position: pos,
+            color: [r, g, b, a],
+            uv: [u, v],
+        });
+    }
+
+    /// Decompose a circle command into a triangle fan.
+    /// cmd: [0, cx, cy, radius, r, g, b, a, segments]
+    fn decompose_circle(&mut self, cmd: &[f32]) {
+        let cx = cmd[1];
+        let cy = cmd[2];
+        let radius = cmd[3];
+        let r = cmd[4];
+        let g = cmd[5];
+        let b = cmd[6];
+        let a = cmd[7];
+        let segments = cmd[8] as u32;
+
+        let step = std::f32::consts::TAU / segments as f32;
+        for i in 0..segments {
+            let a1 = step * i as f32;
+            let a2 = step * (i + 1) as f32;
+            let x1 = cx + radius * a1.cos();
+            let y1 = cy + radius * a1.sin();
+            let x2 = cx + radius * a2.cos();
+            let y2 = cy + radius * a2.sin();
+
+            self.push_vertex(cx, cy, r, g, b, a, 0.0, 0.0);
+            self.push_vertex(x1, y1, r, g, b, a, 0.0, 0.0);
+            self.push_vertex(x2, y2, r, g, b, a, 0.0, 0.0);
+        }
+    }
+
+    /// Decompose a rect command into 2 triangles (6 vertices).
+    /// cmd: [1, x, y, w, h, r, g, b, a]
+    fn decompose_rect(&mut self, cmd: &[f32]) {
+        let x = cmd[1];
+        let y = cmd[2];
+        let w = cmd[3];
+        let h = cmd[4];
+        let r = cmd[5];
+        let g = cmd[6];
+        let b = cmd[7];
+        let a = cmd[8];
+
+        // Triangle 1: top-left, top-right, bottom-left
+        self.push_vertex(x, y, r, g, b, a, 0.0, 0.0);
+        self.push_vertex(x + w, y, r, g, b, a, 0.0, 0.0);
+        self.push_vertex(x, y + h, r, g, b, a, 0.0, 0.0);
+        // Triangle 2: top-right, bottom-right, bottom-left
+        self.push_vertex(x + w, y, r, g, b, a, 0.0, 0.0);
+        self.push_vertex(x + w, y + h, r, g, b, a, 0.0, 0.0);
+        self.push_vertex(x, y + h, r, g, b, a, 0.0, 0.0);
+    }
+
+    /// Pass through a triangle command as 3 vertices.
+    /// cmd: [2, x1, y1, x2, y2, x3, y3, r, g, b, a]
+    fn decompose_triangle(&mut self, cmd: &[f32]) {
+        let r = cmd[7];
+        let g = cmd[8];
+        let b = cmd[9];
+        let a = cmd[10];
+
+        self.push_vertex(cmd[1], cmd[2], r, g, b, a, 0.0, 0.0);
+        self.push_vertex(cmd[3], cmd[4], r, g, b, a, 0.0, 0.0);
+        self.push_vertex(cmd[5], cmd[6], r, g, b, a, 0.0, 0.0);
+    }
+
+    /// Decompose a sprite command into a textured quad (6 vertices).
+    /// cmd: [3, handle, x, y, w, h, r, g, b, a, u_min, v_min, u_max, v_max]
+    fn decompose_sprite(&mut self, cmd: &[f32]) {
+        let handle = cmd[1] as u64;
+        let x = cmd[2];
+        let y = cmd[3];
+        let w = cmd[4];
+        let h = cmd[5];
+        let r = cmd[6];
+        let g = cmd[7];
+        let b = cmd[8];
+        let a = cmd[9];
+        let u_min = cmd[10];
+        let v_min = cmd[11];
+        let u_max = cmd[12];
+        let v_max = cmd[13];
+
+        // Temporarily switch texture for this sprite.
+        let prev_texture = self.current_texture;
+        self.current_texture = handle;
+
+        self.push_vertex(x, y, r, g, b, a, u_min, v_min);
+        self.push_vertex(x + w, y, r, g, b, a, u_max, v_min);
+        self.push_vertex(x, y + h, r, g, b, a, u_min, v_max);
+        self.push_vertex(x + w, y, r, g, b, a, u_max, v_min);
+        self.push_vertex(x + w, y + h, r, g, b, a, u_max, v_max);
+        self.push_vertex(x, y + h, r, g, b, a, u_min, v_max);
+
+        // Restore previous texture.
+        self.current_texture = prev_texture;
     }
 
     /// Set the current texture for subsequent vertex submissions.

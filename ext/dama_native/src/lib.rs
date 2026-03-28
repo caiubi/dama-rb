@@ -92,6 +92,15 @@ pub mod native_ffi {
         ok_or_err(Engine::with(|e| { e.renderer().submit_vertices(floats, count); Ok(()) }), 0)
     }
 
+    /// # Safety
+    /// `command_data` must point to at least `float_count` valid `f32` values.
+    #[unsafe(no_mangle)]
+    pub unsafe extern "C" fn dama_render_commands(command_data: *const f32, float_count: u32) -> i32 {
+        let count = float_count as usize;
+        let commands = std::slice::from_raw_parts(command_data, count);
+        ok_or_err(Engine::with(|e| { e.renderer().submit_commands(commands); Ok(()) }), 0)
+    }
+
     #[unsafe(no_mangle)]
     pub extern "C" fn dama_render_set_texture(handle: u64) -> i32 {
         ok_or_err(Engine::with(|e| { e.renderer().set_current_texture(handle); Ok(()) }), 0)

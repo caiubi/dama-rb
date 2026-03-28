@@ -94,45 +94,6 @@ fn test_render_vertices_rect() {
     dama_native::dama_engine_shutdown();
 }
 
-#[test]
-fn test_render_text_and_screenshot() {
-    dama_native::dama_engine_init_headless(200, 100);
-    dama_native::dama_render_clear(0.0, 0.0, 0.0, 1.0);
-    dama_native::dama_engine_begin_frame();
-    let text = CString::new("Hello").unwrap();
-    assert_eq!(unsafe { dama_native::dama_render_text(text.as_ptr(), 10.0, 10.0, 24.0, 1.0, 1.0, 1.0, 1.0) }, 0);
-    dama_native::dama_engine_end_frame();
-
-    let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("text.png");
-    let c_path = CString::new(path.to_str().unwrap()).unwrap();
-    unsafe { dama_native::dama_debug_screenshot(c_path.as_ptr()) };
-
-    let img = image::open(&path).unwrap().to_rgba8();
-    assert!(img.pixels().any(|p| p.0[0] > 30 || p.0[1] > 30 || p.0[2] > 30));
-
-    dama_native::dama_engine_shutdown();
-}
-
-#[test]
-fn test_poll_events_headless() {
-    dama_native::dama_engine_init_headless(64, 64);
-    assert_eq!(dama_native::dama_engine_poll_events(), 0);
-    dama_native::dama_engine_shutdown();
-}
-
-#[test]
-fn test_delta_time_and_frame_count() {
-    dama_native::dama_engine_init_headless(64, 64);
-    assert_eq!(dama_native::dama_engine_frame_count(), 0);
-    dama_native::dama_engine_begin_frame();
-    dama_native::dama_engine_end_frame();
-    assert_eq!(dama_native::dama_engine_frame_count(), 1);
-    let dt = dama_native::dama_engine_delta_time();
-    assert!((0.0..1.0).contains(&dt));
-    dama_native::dama_engine_shutdown();
-}
-
 /// Load a PNG texture from bytes, render a textured quad, verify pixels.
 #[test]
 fn test_load_texture_and_render_sprite() {
@@ -181,6 +142,125 @@ fn test_load_texture_and_render_sprite() {
 }
 
 #[test]
+fn test_render_text_and_screenshot() {
+    dama_native::dama_engine_init_headless(200, 100);
+    dama_native::dama_render_clear(0.0, 0.0, 0.0, 1.0);
+    dama_native::dama_engine_begin_frame();
+    let text = CString::new("Hello").unwrap();
+    assert_eq!(unsafe { dama_native::dama_render_text(text.as_ptr(), 10.0, 10.0, 24.0, 1.0, 1.0, 1.0, 1.0) }, 0);
+    dama_native::dama_engine_end_frame();
+
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("text.png");
+    let c_path = CString::new(path.to_str().unwrap()).unwrap();
+    unsafe { dama_native::dama_debug_screenshot(c_path.as_ptr()) };
+
+    let img = image::open(&path).unwrap().to_rgba8();
+    assert!(img.pixels().any(|p| p.0[0] > 30 || p.0[1] > 30 || p.0[2] > 30));
+
+    dama_native::dama_engine_shutdown();
+}
+
+#[test]
+fn test_delta_time_and_frame_count() {
+    dama_native::dama_engine_init_headless(64, 64);
+    assert_eq!(dama_native::dama_engine_frame_count(), 0);
+    dama_native::dama_engine_begin_frame();
+    dama_native::dama_engine_end_frame();
+    assert_eq!(dama_native::dama_engine_frame_count(), 1);
+    let dt = dama_native::dama_engine_delta_time();
+    assert!((0.0..1.0).contains(&dt));
+    dama_native::dama_engine_shutdown();
+}
+
+#[test]
+fn test_poll_events_headless() {
+    dama_native::dama_engine_init_headless(64, 64);
+    assert_eq!(dama_native::dama_engine_poll_events(), 0);
+    dama_native::dama_engine_shutdown();
+}
+
+/// Test submit_commands: render a red circle via command API, verify pixels.
+#[test]
+fn test_render_commands_circle() {
+    dama_native::dama_engine_init_headless(100, 100);
+    dama_native::dama_render_clear(0.0, 0.0, 0.0, 1.0);
+    dama_native::dama_engine_begin_frame();
+
+    // Circle command: [tag=0, cx, cy, radius, r, g, b, a, segments]
+    let commands: [f32; 9] = [0.0, 50.0, 50.0, 30.0, 1.0, 0.0, 0.0, 1.0, 32.0];
+    assert_eq!(unsafe { dama_native::dama_render_commands(commands.as_ptr(), 9) }, 0);
+    dama_native::dama_engine_end_frame();
+
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("cmd_circle.png");
+    let c_path = CString::new(path.to_str().unwrap()).unwrap();
+    unsafe { dama_native::dama_debug_screenshot(c_path.as_ptr()) };
+
+    let img = image::open(&path).unwrap().to_rgba8();
+    let center = img.get_pixel(50, 50).0;
+    assert!(center[0] > 200, "red at center: {}", center[0]);
+
+    dama_native::dama_engine_shutdown();
+}
+
+/// Test submit_commands: render a blue rect via command API, verify pixels.
+#[test]
+fn test_render_commands_rect() {
+    dama_native::dama_engine_init_headless(100, 100);
+    dama_native::dama_render_clear(0.0, 0.0, 0.0, 1.0);
+    dama_native::dama_engine_begin_frame();
+
+    // Rect command: [tag=1, x, y, w, h, r, g, b, a]
+    let commands: [f32; 9] = [1.0, 20.0, 20.0, 60.0, 60.0, 0.0, 0.0, 1.0, 1.0];
+    assert_eq!(unsafe { dama_native::dama_render_commands(commands.as_ptr(), 9) }, 0);
+    dama_native::dama_engine_end_frame();
+
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("cmd_rect.png");
+    let c_path = CString::new(path.to_str().unwrap()).unwrap();
+    unsafe { dama_native::dama_debug_screenshot(c_path.as_ptr()) };
+
+    let img = image::open(&path).unwrap().to_rgba8();
+    assert!(img.get_pixel(50, 50).0[2] > 200, "blue at center");
+    assert!(img.get_pixel(5, 5).0[2] < 10, "black at corner");
+
+    dama_native::dama_engine_shutdown();
+}
+
+/// Test submit_commands: mixed commands (rect + circle + triangle) in one call.
+#[test]
+fn test_render_commands_mixed() {
+    dama_native::dama_engine_init_headless(100, 100);
+    dama_native::dama_render_clear(0.0, 0.0, 0.0, 1.0);
+    dama_native::dama_engine_begin_frame();
+
+    // Rect (blue) + Circle (red) + Triangle (green) in one command buffer.
+    let commands: Vec<f32> = vec![
+        // Rect: [1, x, y, w, h, r, g, b, a]
+        1.0, 0.0, 0.0, 100.0, 100.0, 0.0, 0.0, 1.0, 1.0,
+        // Circle: [0, cx, cy, radius, r, g, b, a, segments]
+        0.0, 50.0, 50.0, 20.0, 1.0, 0.0, 0.0, 1.0, 16.0,
+        // Triangle: [2, x1, y1, x2, y2, x3, y3, r, g, b, a]
+        2.0, 10.0, 10.0, 30.0, 10.0, 20.0, 30.0, 0.0, 1.0, 0.0, 1.0,
+    ];
+    unsafe { dama_native::dama_render_commands(commands.as_ptr(), commands.len() as u32) };
+    dama_native::dama_engine_end_frame();
+
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("cmd_mixed.png");
+    let c_path = CString::new(path.to_str().unwrap()).unwrap();
+    unsafe { dama_native::dama_debug_screenshot(c_path.as_ptr()) };
+
+    let img = image::open(&path).unwrap().to_rgba8();
+    // Center should have red (circle on top of blue rect).
+    let center = img.get_pixel(50, 50).0;
+    assert!(center[0] > 200, "red circle at center: {}", center[0]);
+
+    dama_native::dama_engine_shutdown();
+}
+
+#[test]
 fn test_custom_shader_load_and_render() {
     dama_native::dama_engine_init_headless(64, 64);
 
@@ -201,16 +281,9 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     dama_native::dama_render_clear(0.0, 0.0, 0.0, 1.0);
     dama_native::dama_render_set_shader(handle);
 
-    // Draw a full-screen white rect via raw vertices.
-    let vertices: Vec<f32> = vec![
-        0.0,  0.0,  1.0, 1.0, 1.0, 1.0, 0.0, 0.0,
-        64.0, 0.0,  1.0, 1.0, 1.0, 1.0, 0.0, 0.0,
-        0.0,  64.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0,
-        64.0, 0.0,  1.0, 1.0, 1.0, 1.0, 0.0, 0.0,
-        64.0, 64.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0,
-        0.0,  64.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0,
-    ];
-    unsafe { dama_native::dama_render_vertices(vertices.as_ptr(), 6) };
+    // Draw a rect covering the entire canvas via commands.
+    let commands: Vec<f32> = vec![1.0, 0.0, 0.0, 64.0, 64.0, 1.0, 1.0, 1.0, 1.0];
+    unsafe { dama_native::dama_render_commands(commands.as_ptr(), commands.len() as u32) };
 
     dama_native::dama_render_set_shader(0);
     dama_native::dama_engine_end_frame();
