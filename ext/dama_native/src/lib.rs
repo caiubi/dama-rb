@@ -257,3 +257,140 @@ pub mod native_ffi {
 
 #[cfg(not(target_arch = "wasm32"))]
 pub use native_ffi::*;
+
+// ===========================================================================
+// Web WASM exports (wasm_bindgen for JavaScript)
+// ===========================================================================
+#[cfg(target_arch = "wasm32")]
+mod web_exports {
+    use super::*;
+    use wasm_bindgen::prelude::*;
+
+    #[wasm_bindgen]
+    pub fn dama_init(canvas_id: &str, width: u32, height: u32) {
+        Engine::init_web(canvas_id, width, height).unwrap();
+    }
+
+    #[wasm_bindgen]
+    pub fn dama_shutdown() { let _ = Engine::shutdown(); }
+
+    #[wasm_bindgen]
+    pub fn dama_poll_events() -> bool {
+        Engine::pump_events().unwrap_or(false)
+    }
+
+    #[wasm_bindgen]
+    pub fn dama_begin_frame() { let _ = Engine::with(|e| e.begin_frame()); }
+
+    #[wasm_bindgen]
+    pub fn dama_end_frame() { let _ = Engine::with(|e| e.end_frame()); }
+
+    #[wasm_bindgen]
+    pub fn dama_delta_time() -> f64 { Engine::with(|e| Ok(e.delta_time())).unwrap_or(0.0) }
+
+    #[wasm_bindgen]
+    pub fn dama_frame_count() -> u64 { Engine::with(|e| Ok(e.frame_count())).unwrap_or(0) }
+
+    #[wasm_bindgen]
+    pub fn dama_clear(r: f32, g: f32, b: f32, a: f32) { let _ = Engine::with(|e| e.renderer().clear(r, g, b, a)); }
+
+    #[wasm_bindgen]
+    pub fn dama_render_vertices(vertex_data: &[f32], vertex_count: u32) {
+        let count = vertex_count as usize;
+        let _ = Engine::with(|e| { e.renderer().submit_vertices(vertex_data, count); Ok(()) });
+    }
+
+    /// Accept high-level draw commands. Rust decomposes shapes into triangles.
+    /// This eliminates geometry decomposition from Ruby/wasm, dramatically
+    /// improving web performance.
+    #[wasm_bindgen]
+    pub fn dama_render_commands(command_data: &[f32], float_count: u32) {
+        let count = float_count as usize;
+        let _ = Engine::with(|e| { e.renderer().submit_commands(&command_data[..count]); Ok(()) });
+    }
+
+    #[wasm_bindgen]
+    pub fn dama_set_texture(handle: u64) {
+        let _ = Engine::with(|e| { e.renderer().set_current_texture(handle); Ok(()) });
+    }
+
+    #[wasm_bindgen]
+    pub fn dama_load_texture(data: &[u8]) -> u64 {
+        Engine::with(|e| e.renderer().load_texture(data)).unwrap_or(0)
+    }
+
+    #[wasm_bindgen]
+    pub fn dama_unload_texture(handle: u64) {
+        let _ = Engine::with(|e| { e.renderer().unload_texture(handle); Ok(()) });
+    }
+
+    // Shader management.
+    #[wasm_bindgen]
+    pub fn dama_shader_load(source: &str) -> u64 {
+        match Engine::with(|e| e.renderer().load_shader(source)) {
+            Ok(handle) => handle,
+            Err(_) => 0,
+        }
+    }
+
+    #[wasm_bindgen]
+    pub fn dama_shader_unload(handle: u64) {
+        let _ = Engine::with(|e| { e.renderer().unload_shader(handle); Ok(()) });
+    }
+
+    #[wasm_bindgen]
+    pub fn dama_set_shader(handle: u64) {
+        let _ = Engine::with(|e| { e.renderer().set_current_shader(handle); Ok(()) });
+    }
+
+    #[wasm_bindgen]
+    pub fn dama_render_text(text: &str, x: f32, y: f32, size: f32, r: f32, g: f32, b: f32, a: f32) {
+        let _ = Engine::with(|e| { e.renderer().draw_text(text, x, y, size, r, g, b, a, None); Ok(()) });
+    }
+
+    // Input: JS calls these to forward browser events to Rust state.
+    #[wasm_bindgen]
+    pub fn dama_input_set_key(key_code: u32, pressed: bool) {
+        crate::window::InputState::set_key(key_code, pressed);
+    }
+
+    #[wasm_bindgen]
+    pub fn dama_input_set_mouse(x: f32, y: f32) {
+        crate::window::InputState::set_mouse(x, y);
+    }
+
+    #[wasm_bindgen]
+    pub fn dama_input_set_mouse_button(button: u32, pressed: bool) {
+        crate::window::InputState::set_mouse_button(button, pressed);
+    }
+
+    #[wasm_bindgen]
+    pub fn dama_input_begin_frame() {
+        crate::window::InputState::begin_frame();
+    }
+
+    #[wasm_bindgen]
+    pub fn dama_key_pressed(key_code: u32) -> bool {
+        crate::window::InputState::with(|s| s.is_key_pressed(key_code))
+    }
+
+    #[wasm_bindgen]
+    pub fn dama_key_just_pressed(key_code: u32) -> bool {
+        crate::window::InputState::with(|s| s.is_key_just_pressed(key_code))
+    }
+
+    #[wasm_bindgen]
+    pub fn dama_mouse_x() -> f32 {
+        crate::window::InputState::with(|s| s.mouse_x())
+    }
+
+    #[wasm_bindgen]
+    pub fn dama_mouse_y() -> f32 {
+        crate::window::InputState::with(|s| s.mouse_y())
+    }
+
+    #[wasm_bindgen]
+    pub fn dama_mouse_button_pressed(button: u32) -> bool {
+        crate::window::InputState::with(|s| s.is_mouse_button_pressed(button))
+    }
+}
