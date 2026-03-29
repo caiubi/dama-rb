@@ -1,0 +1,4 @@
+#!/usr/bin/env ruby
+require "dama"
+
+Dama::Cli.run(args: ARGV)
