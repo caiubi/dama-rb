@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>dama-rb: Web Demo (WebGPU)</title>
+  <style>
+    body { margin: 0; background: #111; display: flex; justify-content: center; align-items: center; height: 100vh; }
+    canvas { border: 1px solid #333; }
+    #loading { color: #fff; font-family: sans-serif; font-size: 24px; position: absolute; }
+  </style>
+</head>
+<body>
+  <div id="loading">Loading...</div>
+  <canvas id="game"></canvas>
+
+  <script type="module">
+    // 1. Load the Rust wgpu renderer (compiled to wasm).
+    const loading = document.getElementById("loading");
+    loading.textContent = "Loading renderer...";
+
+    // Set canvas to physical pixel resolution for Retina sharpness.
+    const canvas = document.getElementById("game");
+    const dpr = window.devicePixelRatio || 1;
+    const logicalWidth = 800;
+    const logicalHeight = 600;
+    canvas.width = logicalWidth * dpr;
+    canvas.height = logicalHeight * dpr;
+    canvas.style.width = logicalWidth + "px";
+    canvas.style.height = logicalHeight + "px";
+
+    let renderer;
+    try {
+      const mod = await import("./pkg/dama_native.js");
+      await mod.default();
+      renderer = mod;
+    } catch (e) {
+      loading.textContent = "Failed to load renderer: " + e.message;
+      console.error(e);
+      throw e;
+    }
+
+    // Expose renderer exports globally (for ruby.wasm to call via JS.global).
+    window.damaWgpu = renderer;
+
+    // Initialize the Rust renderer with logical dimensions.
+    // The canvas backing buffer is already set to physical (dpr × logical).
+    renderer.dama_init("game", logicalWidth, logicalHeight);
+
+    // Wait for async GPU init to complete.
+    // Rust's spawn_local sets window.__damaReady when the engine is fully initialized.
+    await new Promise(resolve => {
+      const check = setInterval(() => {
+        if (window.__damaReady) { clearInterval(check); resolve(); }
+      }, 10);
+      setTimeout(() => { clearInterval(check); resolve(); }, 10000);
+    });
+
+    // Input: forward browser events to Rust wasm.
+    const KEY_MAP = {
+      ArrowLeft: 80, ArrowRight: 81, ArrowUp: 82, ArrowDown: 79,
+      Space: 62, Enter: 57, Escape: 114, Backspace: 52, Tab: 63,
+      ShiftLeft: 60, ShiftRight: 61, ControlLeft: 55, ControlRight: 56,
+      AltLeft: 50, AltRight: 51,
+      KeyA: 19, KeyB: 20, KeyC: 21, KeyD: 22, KeyE: 23, KeyF: 24,
+      KeyG: 25, KeyH: 26, KeyI: 27, KeyJ: 28, KeyK: 29, KeyL: 30,
+      KeyM: 31, KeyN: 32, KeyO: 33, KeyP: 34, KeyQ: 35, KeyR: 36,
+      KeyS: 37, KeyT: 38, KeyU: 39, KeyV: 40, KeyW: 41, KeyX: 42,
+      KeyY: 43, KeyZ: 44,
+      Digit0: 5, Digit1: 6, Digit2: 7, Digit3: 8, Digit4: 9,
+      Digit5: 10, Digit6: 11, Digit7: 12, Digit8: 13, Digit9: 14,
+      Equal: 15, Minus: 45,
+    };
+
+    document.addEventListener("keydown", e => {
+      const c = KEY_MAP[e.code]; if (c !== undefined) { e.preventDefault(); renderer.dama_input_set_key(c, true); }
+    });
+    document.addEventListener("keyup", e => {
+      const c = KEY_MAP[e.code]; if (c !== undefined) renderer.dama_input_set_key(c, false);
+    });
+    canvas.addEventListener("mousemove", e => {
+      const r = canvas.getBoundingClientRect();
+      renderer.dama_input_set_mouse(e.clientX - r.left, e.clientY - r.top);
+    });
+    // Track mouse button state in JS for Ruby to read without re-entering Rust wasm.
+    window.damaMouseButtons = {};
+    canvas.addEventListener("mousedown", e => {
+      renderer.dama_input_set_mouse_button(e.button, true);
+      window.damaMouseButtons[e.button] = true;
+    });
+    canvas.addEventListener("mouseup", e => {
+      renderer.dama_input_set_mouse_button(e.button, false);
+      window.damaMouseButtons[e.button] = false;
+    });
+
+    // Timing state for Ruby to read.
+    window.damaTime = { delta: 0.016 };
+
+    // 2. Load ruby.wasm + game code.
+    loading.textContent = "Loading ruby.wasm...";
+
+    let vm;
+    try {
+      const { DefaultRubyVM } = await import("./ruby_wasm.js");
+      const response = await fetch("game.wasm");
+      const module = await WebAssembly.compile(await response.arrayBuffer());
+      const result = await DefaultRubyVM(module);
+      vm = result.vm;
+    } catch (e) {
+      loading.textContent = "Failed to load ruby.wasm: " + e.message;
+      console.error(e);
+      throw e;
+    }
+
+    loading.textContent = "Starting game...";
+    
+    vm.eval('require "/src/app"');
+    loading.style.display = "none";
+
+    // 3. JS-driven frame loop.
+    let lastTime = performance.now();
+    function gameLoop(timestamp) {
+      const dt = (timestamp - lastTime) / 1000;
+      lastTime = timestamp;
+      window.damaTime.delta = dt;
+
+      renderer.dama_input_begin_frame();
+
+      try {
+        vm.eval("$dama_tick.call");
+      } catch (e) {
+        console.error("Ruby tick error:", e);
+        loading.textContent = "Error: " + e.message;
+        loading.style.display = "block";
+        return;
+      }
+
+      requestAnimationFrame(gameLoop);
+    }
+    requestAnimationFrame(gameLoop);
+  </script>
+</body>
+</html>
