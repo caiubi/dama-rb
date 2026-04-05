@@ -4,6 +4,7 @@ ext/dama_native/target/
 # Ruby
 coverage/
 .ruby-lsp/
+tmp/
 
 # Game project build outputs
 examples/*/dist/

@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="60 -50 500 500" role="img" aria-labelledby="title desc">
+  <title id="title">dama-rb logo</title>
+  <desc id="desc">A glossy red orb over a circular checkerboard base.</desc>
+
+  <defs>
+<radialGradient id="orbFill" cx="38%" cy="28%" r="65%">
+      <stop offset="0%" stop-color="#ff8d8d"/>
+      <stop offset="25%" stop-color="#ff2323"/>
+      <stop offset="70%" stop-color="#c30012"/>
+      <stop offset="100%" stop-color="#6c0008"/>
+    </radialGradient>
+
+    <radialGradient id="orbGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ff4d4d" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#ff4d4d" stop-opacity="0"/>
+    </radialGradient>
+
+    <linearGradient id="ringTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3d434a"/>
+      <stop offset="100%" stop-color="#111418"/>
+    </linearGradient>
+
+    <linearGradient id="ringSide" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#20252b"/>
+      <stop offset="100%" stop-color="#050607"/>
+    </linearGradient>
+
+    <filter id="softShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="14" stdDeviation="14" flood-color="#000000" flood-opacity="0.28"/>
+    </filter>
+
+<clipPath id="iconClip">
+      <rect x="60" y="-50" width="500" height="500" rx="90"/>
+    </clipPath>
+
+    <clipPath id="topEllipseClip">
+      <ellipse cx="310" cy="250" rx="190" ry="74"/>
+    </clipPath>
+  </defs>
+
+  <!-- White rounded-corner background -->
+  <rect x="60" y="-50" width="500" height="500" rx="90" fill="#ffffff"/>
+
+  <g clip-path="url(#iconClip)">
+  <g filter="url(#softShadow)">
+    <!-- Base side -->
+    <ellipse cx="310" cy="286" rx="190" ry="74" fill="url(#ringSide)"/>
+
+    <!-- Checkerboard top clipped to ellipse -->
+    <g clip-path="url(#topEllipseClip)">
+      <rect x="120" y="176" width="380" height="148" fill="#f4f4f4"/>
+      <g fill="#111111">
+        <rect x="120" y="176" width="47.5" height="37"/>
+        <rect x="215" y="176" width="47.5" height="37"/>
+        <rect x="310" y="176" width="47.5" height="37"/>
+        <rect x="405" y="176" width="47.5" height="37"/>
+
+        <rect x="167.5" y="213" width="47.5" height="37"/>
+        <rect x="262.5" y="213" width="47.5" height="37"/>
+        <rect x="357.5" y="213" width="47.5" height="37"/>
+        <rect x="452.5" y="213" width="47.5" height="37"/>
+
+        <rect x="120" y="250" width="47.5" height="37"/>
+        <rect x="215" y="250" width="47.5" height="37"/>
+        <rect x="310" y="250" width="47.5" height="37"/>
+        <rect x="405" y="250" width="47.5" height="37"/>
+
+        <rect x="167.5" y="287" width="47.5" height="37"/>
+        <rect x="262.5" y="287" width="47.5" height="37"/>
+        <rect x="357.5" y="287" width="47.5" height="37"/>
+        <rect x="452.5" y="287" width="47.5" height="37"/>
+      </g>
+      <ellipse cx="310" cy="250" rx="190" ry="74" fill="url(#ringTop)" opacity="0.16"/>
+    </g>
+
+    <!-- Rim -->
+    <ellipse cx="310" cy="250" rx="190" ry="74" fill="none" stroke="#2c3138" stroke-width="16"/>
+    
+    <!-- Orb shadow on board -->
+    <ellipse cx="290" cy="250" rx="95" ry="28" fill="#3c0008" opacity="0.28"/>
+
+    <!-- Orb -->
+    <circle cx="255" cy="170" r="118" fill="url(#orbGlow)" opacity="0.9"/>
+    <circle cx="255" cy="170" r="102" fill="url(#orbFill)"/>
+    <ellipse cx="222" cy="130" rx="32" ry="22" fill="#ffffff" opacity="0.78" transform="rotate(-22 222 130)"/>
+    <ellipse cx="294" cy="197" rx="13" ry="10" fill="#ffb2b2" opacity="0.36"/>
+    <ellipse cx="322" cy="178" rx="18" ry="14" fill="#ff6b6b" opacity="0.22"/>
+    <circle cx="255" cy="170" r="102" fill="none" stroke="#8d000d" stroke-width="4" opacity="0.55"/>
+  </g>
+  </g>
+</svg>
