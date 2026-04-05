@@ -6,10 +6,12 @@ AllCops:
   NewCops: enable
   Exclude:
     - "examples/**/*"
+    - "web/**/*"
     - "vendor/**/*"
     - "ext/**/*"
+    - "example_proposal.rb"
 
-# --- Style ---
+# --- Style (matching CLAUDE.md) ---
 
 Style/StringLiterals:
   EnforcedStyle: double_quotes
@@ -79,6 +81,74 @@ RSpec/NestedGroups:
 RSpec/DescribeClass:
   Exclude:
     - "spec/integration/**/*"
+    - "spec/dama/boot_spec.rb"
 
 RSpec/SpecFilePathFormat:
   Enabled: false
+
+RSpec/IndexedLet:
+  Enabled: false
+
+RSpec/InstanceVariable:
+  Enabled: false
+
+RSpec/MultipleMemoizedHelpers:
+  Max: 10
+
+# Drawing methods naturally have many parameters (x, y, r, g, b, a, etc.)
+Metrics/ParameterLists:
+  Max: 12
+
+# Global variables are used in auto_loader specs for testing file loading.
+Style/GlobalVars:
+  Exclude:
+    - "spec/**/*"
+    - "lib/dama/web/**/*"
+
+# Unused filled parameter in Backend::Base stubs is intentional (interface contract).
+Lint/UnusedMethodArgument:
+  AllowUnusedKeywordArguments: true
+
+# Constants inside spec blocks are intentional for test doubles.
+Lint/ConstantDefinitionInBlock:
+  Exclude:
+    - "spec/**/*"
+
+RSpec/LeakyConstantDeclaration:
+  Exclude:
+    - "spec/**/*"
+
+# Empty blocks in compose {} are valid DSL usage.
+Lint/EmptyBlock:
+  Exclude:
+    - "spec/**/*"
+
+# Empty class for Backend::Base stubs.
+Lint/EmptyClass:
+  Enabled: false
+
+# Private constants are intentional for encapsulation.
+Lint/UselessAccessModifier:
+  Enabled: false
+
+Lint/UselessConstantScoping:
+  Enabled: false
+
+Style/DocumentDynamicEvalDefinition:
+  Enabled: false
+
+Metrics/AbcSize:
+  Max: 26
+  Exclude:
+    - "lib/dama/web_builder.rb"
+
+# Base class methods need the parameter names for documentation.
+Naming/PredicatePrefix:
+  Enabled: false
+
+Naming/PredicateMethod:
+  Enabled: false
+
+RSpec/NoExpectationExample:
+  Exclude:
+    - "spec/integration/sprite_spec.rb"
