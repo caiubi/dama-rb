@@ -16,7 +16,7 @@ module Dama
   #       play(:jump) if input.space?
   #     end
   #   end
-  class Scene
+  class Scene # rubocop:disable Metrics/ClassLength
     class << self
       def compose(&block)
         @compose_block = block
@@ -118,12 +118,13 @@ module Dama
       end
     end
 
-    # Register a named node, load textures, and create physics body.
+    # Register a named node, load textures/shaders, and create physics body.
     def register_named_node(name:, instance_node:)
       named_nodes[name] = instance_node
       define_singleton_method(name) { named_nodes.fetch(name) }
 
       instance_node.node.load_textures(asset_cache:) if asset_cache
+      instance_node.node.load_shaders(backend:) if backend
       create_physics_body(name:, node: instance_node.node)
     end
 
@@ -145,11 +146,43 @@ module Dama
       all(klass).each(&)
     end
 
+    # Add a node dynamically at runtime (during update or enter).
+    def add(class_or_instance, as:, tags: [], group: nil, **props)
+      node_instance = build_node(class_or_instance, props)
+      instance_node = SceneGraph::InstanceNode.new(id: as, node: node_instance, tags: Array(tags))
+      scene_graph.add(instance_node:, parent_group: group)
+      register_named_node(name: as, instance_node:)
+      instance_node
+    end
+
+    # Remove a node, its physics body, and release its textures/shaders.
+    def remove(name)
+      instance_node = named_nodes.delete(name)
+      return unless instance_node
+
+      node = instance_node.node
+      node.unload_textures(asset_cache:) if asset_cache
+      node.unload_shaders(backend:) if backend
+      physics_world&.remove(node.physics) if node.physics
+
+      scene_graph.remove(id: name)
+    end
+
     private
 
     attr_reader :registry, :scene_graph, :named_nodes, :asset_cache,
                 :scene_switcher, :backend, :audio, :physics_world,
                 :collision_handlers
+
+    NODE_BUILDERS = {
+      Class => ->(klass, props) { klass.new(**props) },
+      :instance => ->(instance, _props) { instance },
+    }.freeze
+
+    def build_node(class_or_instance, props)
+      builder_key = class_or_instance.is_a?(Class) ? Class : :instance
+      NODE_BUILDERS.fetch(builder_key).call(class_or_instance, props)
+    end
 
     # Load all class-level sound declarations via Audio.
     def load_sounds
