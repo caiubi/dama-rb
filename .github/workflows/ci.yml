@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-ruby:
+    name: RuboCop
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4"
+          bundler-cache: true
+      - run: bundle exec rubocop
+
+  lint-rust:
+    name: Clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ext/dama_native/target
+            ~/.cargo/registry
+          key: rust-${{ runner.os }}-${{ hashFiles('ext/dama_native/Cargo.lock') }}
+      - run: cd ext/dama_native && cargo clippy --all-targets -- -D warnings
+
+  test-rust:
+    name: Rust Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ext/dama_native/target
+            ~/.cargo/registry
+          key: rust-${{ runner.os }}-${{ hashFiles('ext/dama_native/Cargo.lock') }}
+      - run: cd ext/dama_native && cargo test
+
+  test-ruby:
+    name: RSpec (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4"
+          bundler-cache: true
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ext/dama_native/target
+            ~/.cargo/registry
+          key: rust-${{ runner.os }}-${{ hashFiles('ext/dama_native/Cargo.lock') }}
+      - name: Build native extension
+        run: cd ext/dama_native && cargo build --release
+      - name: Run specs
+        run: bundle exec rspec
