@@ -11,7 +11,7 @@ RSpec.describe Dama::Release::NativeBuilder do
 
         result = builder.build
 
-        expect(result).to match(/libdama_native\.dylib$/)
+        expect(result).to match(/libdama_native\.\w+$/)
         expect(builder).to have_received(:system).with(
           hash_including("PATH"),
           "cargo build --release",

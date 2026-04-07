@@ -200,7 +200,7 @@ RSpec.describe Dama::Release::DylibRelinker do
       end
     end
 
-    it "reads linked dylibs from a real binary via ruby-macho" do
+    it "reads linked dylibs from a real binary via ruby-macho", if: RUBY_PLATFORM.include?("darwin") do
       relinker = described_class.new(
         binary_path: RbConfig.ruby,
         lib_destination: Dir.mktmpdir,
