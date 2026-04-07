@@ -23,6 +23,10 @@ module Dama
       def relink
         FileUtils.mkdir_p(lib_destination)
         relink_binary(path: binary_path)
+        # ruby-macho modifies Mach-O data directly, invalidating the
+        # original code signature. Re-sign every modified binary with
+        # an ad-hoc signature so macOS doesn't kill the process.
+        codesign_modified_binaries
       end
 
       private
@@ -69,6 +73,14 @@ module Dama
         new_path = "@loader_path/#{relative}/#{lib_name}"
 
         MachO::Tools.change_install_name(binary, old_path, new_path)
+      end
+
+      def codesign_modified_binaries
+        processed.each { |path| codesign(path:) }
+      end
+
+      def codesign(path:)
+        system("codesign", "--sign", "-", "--force", path)
       end
     end
   end

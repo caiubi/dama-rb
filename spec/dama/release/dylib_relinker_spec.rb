@@ -22,6 +22,7 @@ RSpec.describe Dama::Release::DylibRelinker do
 
     def stub_dylibs(relinker, path:, libs:)
       allow(relinker).to receive(:linked_dylibs).with(path:).and_return(libs)
+      allow(relinker).to receive(:codesign)
     end
 
     it "copies non-system libraries to the lib destination" do
@@ -197,6 +198,47 @@ RSpec.describe Dama::Release::DylibRelinker do
         relinker.relink
 
         expect(File.read(dest_lib)).to eq("already here")
+      end
+    end
+
+    it "ad-hoc signs all modified binaries after relinking" do
+      Dir.mktmpdir do |dir|
+        bundle = create_bundle(dir:)
+        source_ruby = File.join(bundle.fetch(:source_lib_dir), "libruby.3.4.dylib")
+        dest_ruby = File.join(bundle.fetch(:lib_dest), "libruby.3.4.dylib")
+
+        relinker = described_class.new(
+          binary_path: bundle.fetch(:binary),
+          lib_destination: bundle.fetch(:lib_dest),
+        )
+
+        stub_dylibs(relinker, path: bundle.fetch(:binary), libs: [source_ruby])
+        stub_dylibs(relinker, path: dest_ruby, libs: [])
+        allow(MachO::Tools).to receive(:change_install_name)
+
+        relinker.relink
+
+        expect(relinker).to have_received(:codesign).with(path: bundle.fetch(:binary))
+        expect(relinker).to have_received(:codesign).with(path: dest_ruby)
+      end
+    end
+
+    it "calls codesign to ad-hoc sign a binary", if: RUBY_PLATFORM.include?("darwin") do
+      Dir.mktmpdir do |dir|
+        # Copy a real binary so codesign has a valid target
+        binary = File.join(dir, "ruby")
+        FileUtils.cp(RbConfig.ruby, binary)
+
+        relinker = described_class.new(
+          binary_path: binary,
+          lib_destination: dir,
+        )
+
+        relinker.send(:codesign, path: binary)
+
+        # Verify the binary has a valid ad-hoc signature
+        output = `codesign -d --verbose #{binary} 2>&1`
+        expect(output).to include("Signature=adhoc")
       end
     end
 
