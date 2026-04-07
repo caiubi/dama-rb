@@ -49,7 +49,7 @@ jobs:
           path: |
             ext/dama_native/target
             ~/.cargo/registry
-          key: rust-${{ runner.os }}-${{ hashFiles('ext/dama_native/Cargo.lock') }}
+          key: rust-test-${{ runner.os }}-${{ hashFiles('ext/dama_native/Cargo.lock') }}
       - run: cd ext/dama_native && cargo test
 
   test-ruby:
