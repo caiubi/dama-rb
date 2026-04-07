@@ -45,6 +45,10 @@ jobs:
             ~/.cargo/registry
           key: rust-release-${{ runner.os }}-${{ hashFiles('ext/dama_native/Cargo.lock') }}
 
+      - name: Install example dependencies
+        working-directory: examples/${{ matrix.example }}
+        run: bundle install
+
       - name: Build release
         working-directory: examples/${{ matrix.example }}
         run: bundle exec bin/dama release
