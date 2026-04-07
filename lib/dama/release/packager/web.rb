@@ -19,7 +19,8 @@ module Dama
           FileUtils.mkdir_p(File.dirname(release_dir))
           FileUtils.cp_r(File.join(project_root, "dist"), release_dir)
 
-          puts "Web release created: #{release_dir}"
+          archive_path = Archiver.new(source_path: release_dir).create_zip
+          puts "Web release created: #{archive_path}"
         end
 
         private

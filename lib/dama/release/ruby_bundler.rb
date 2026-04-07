@@ -62,6 +62,8 @@ module Dama
         dest_archdir = File.join(dest_libdir, RbConfig::CONFIG.fetch("arch"))
         FileUtils.mkdir_p(dest_archdir)
         FileUtils.cp_r("#{archdir}/.", dest_archdir)
+
+        StdlibTrimmer.new(stdlib_dir: dest_libdir, arch_dir: dest_archdir).trim
       end
 
       # Runs bundle install using the project's original Gemfile so that

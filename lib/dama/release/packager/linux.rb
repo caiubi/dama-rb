@@ -21,7 +21,8 @@ module Dama
           copy_icon
           write_launcher_script(native_library_path:)
 
-          puts "Linux release created: #{release_path}"
+          archive_path = Archiver.new(source_path: release_path).create_tar_gz
+          puts "Linux release created: #{archive_path}"
         end
 
         private

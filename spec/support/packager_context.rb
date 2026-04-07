@@ -34,6 +34,12 @@ RSpec.shared_context "with packager stubs" do
 
     dylib_relinker = instance_double(Dama::Release::DylibRelinker, relink: nil)
     allow(Dama::Release::DylibRelinker).to receive(:new).and_return(dylib_relinker)
+
+    archiver = instance_double(Dama::Release::Archiver,
+                               create_macos_zip: "fake.zip",
+                               create_tar_gz: "fake.tar.gz",
+                               create_zip: "fake.zip")
+    allow(Dama::Release::Archiver).to receive(:new).and_return(archiver)
   end
 end
 

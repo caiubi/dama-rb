@@ -24,7 +24,8 @@ module Dama
           write_info_plist
           write_launcher_script(native_library_path:)
 
-          puts "macOS release created: #{app_path}"
+          archive_path = Archiver.new(source_path: app_path).create_macos_zip
+          puts "macOS release created: #{archive_path}"
         end
 
         private
