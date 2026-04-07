@@ -44,24 +44,29 @@ module Dama
         js_renderer.call(:dama_clear, r, g, b, a)
       end
 
-      def draw_triangle(x1:, y1:, x2:, y2:, x3:, y3:, color: Dama::Colors::WHITE, r: color.r, g: color.g, b: color.b, a: color.a, filled: true)
+      def draw_triangle(x1:, y1:, x2:, y2:, x3:, y3:, color: Dama::Colors::WHITE,
+                        r: color.r, g: color.g, b: color.b, a: color.a, filled: true)
         command_buffer.push_triangle(x1:, y1:, x2:, y2:, x3:, y3:, r:, g:, b:, a:)
       end
 
-      def draw_rect(x:, y:, w:, h:, color: Dama::Colors::WHITE, r: color.r, g: color.g, b: color.b, a: color.a, filled: true)
+      def draw_rect(x:, y:, w:, h:, color: Dama::Colors::WHITE,
+                    r: color.r, g: color.g, b: color.b, a: color.a, filled: true)
         command_buffer.push_rect(x:, y:, w:, h:, r:, g:, b:, a:)
       end
 
-      def draw_circle(cx:, cy:, radius:, color: Dama::Colors::WHITE, r: color.r, g: color.g, b: color.b, a: color.a, filled: true, segments: 32)
+      def draw_circle(cx:, cy:, radius:, color: Dama::Colors::WHITE,
+                      r: color.r, g: color.g, b: color.b, a: color.a, filled: true, segments: 32)
         command_buffer.push_circle(cx:, cy:, radius:, r:, g:, b:, a:, segments:)
       end
 
-      def draw_text(text:, x:, y:, size:, color: Dama::Colors::WHITE, r: color.r, g: color.g, b: color.b, a: color.a, font: nil)
+      def draw_text(text:, x:, y:, size:, color: Dama::Colors::WHITE,
+                    r: color.r, g: color.g, b: color.b, a: color.a, font: nil)
         flush_commands
         js_renderer.call(:dama_render_text, text, x, y, size, r, g, b, a)
       end
 
-      def draw_sprite(texture_handle:, x:, y:, w:, h:, color: Dama::Colors::WHITE, r: color.r, g: color.g, b: color.b, a: color.a)
+      def draw_sprite(texture_handle:, x:, y:, w:, h:, color: Dama::Colors::WHITE,
+                      r: color.r, g: color.g, b: color.b, a: color.a)
         command_buffer.push_sprite(
           texture_handle:, x:, y:, w:, h:, r:, g:, b:, a:,
           u_min: 0.0, v_min: 0.0, u_max: 1.0, v_max: 1.0

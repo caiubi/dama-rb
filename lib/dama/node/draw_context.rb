@@ -23,7 +23,8 @@ module Dama
         with_shader(shader) { backend.draw_rect(x: sx, y: sy, w: sw, h: sh, r:, g:, b:, a:) }
       end
 
-      def triangle(x1, y1, x2, y2, x3, y3, color: Dama::Colors::WHITE, r: color.r, g: color.g, b: color.b, a: color.a, shader: nil)
+      def triangle(x1, y1, x2, y2, x3, y3, color: Dama::Colors::WHITE,
+                   r: color.r, g: color.g, b: color.b, a: color.a, shader: nil)
         sx1, sy1 = apply_camera(x1, y1)
         sx2, sy2 = apply_camera(x2, y2)
         sx3, sy3 = apply_camera(x3, y3)
@@ -32,19 +33,22 @@ module Dama
         end
       end
 
-      def circle(cx, cy, radius, color: Dama::Colors::WHITE, r: color.r, g: color.g, b: color.b, a: color.a, segments: 32, shader: nil)
+      def circle(cx, cy, radius, color: Dama::Colors::WHITE,
+                 r: color.r, g: color.g, b: color.b, a: color.a, segments: 32, shader: nil)
         sx, sy = apply_camera(cx, cy)
         with_shader(shader) do
           backend.draw_circle(cx: sx, cy: sy, radius: radius * zoom_factor, r:, g:, b:, a:, segments:)
         end
       end
 
-      def text(content, x, y, size: 24.0, color: Dama::Colors::WHITE, r: color.r, g: color.g, b: color.b, a: color.a, font: nil)
+      def text(content, x, y, size: 24.0, color: Dama::Colors::WHITE,
+               r: color.r, g: color.g, b: color.b, a: color.a, font: nil)
         sx, sy = apply_camera(x, y)
         backend.draw_text(text: content.to_s, x: sx, y: sy, size: size * zoom_factor, r:, g:, b:, a:, font:)
       end
 
-      def sprite(texture_handle, x, y, w, h, color: Dama::Colors::WHITE, r: color.r, g: color.g, b: color.b, a: color.a, shader: nil)
+      def sprite(texture_handle, x, y, w, h, color: Dama::Colors::WHITE,
+                 r: color.r, g: color.g, b: color.b, a: color.a, shader: nil)
         sx, sy = apply_camera(x, y)
         sw = w * zoom_factor
         sh = h * zoom_factor

@@ -36,19 +36,23 @@ module Dama
         raise NotImplementedError
       end
 
-      def draw_triangle(x1:, y1:, x2:, y2:, x3:, y3:, color: Dama::Colors::WHITE, r: color.r, g: color.g, b: color.b, a: color.a, filled: true)
+      def draw_triangle(x1:, y1:, x2:, y2:, x3:, y3:, color: Dama::Colors::WHITE,
+                        r: color.r, g: color.g, b: color.b, a: color.a, filled: true)
         raise NotImplementedError
       end
 
-      def draw_rect(x:, y:, w:, h:, color: Dama::Colors::WHITE, r: color.r, g: color.g, b: color.b, a: color.a, filled: true)
+      def draw_rect(x:, y:, w:, h:, color: Dama::Colors::WHITE,
+                    r: color.r, g: color.g, b: color.b, a: color.a, filled: true)
         raise NotImplementedError
       end
 
-      def draw_circle(cx:, cy:, radius:, color: Dama::Colors::WHITE, r: color.r, g: color.g, b: color.b, a: color.a, filled: true, segments: 32)
+      def draw_circle(cx:, cy:, radius:, color: Dama::Colors::WHITE,
+                      r: color.r, g: color.g, b: color.b, a: color.a, filled: true, segments: 32)
         raise NotImplementedError
       end
 
-      def draw_text(text:, x:, y:, size:, color: Dama::Colors::WHITE, r: color.r, g: color.g, b: color.b, a: color.a, font: nil)
+      def draw_text(text:, x:, y:, size:, color: Dama::Colors::WHITE,
+                    r: color.r, g: color.g, b: color.b, a: color.a, font: nil)
         raise NotImplementedError
       end
 
@@ -56,7 +60,8 @@ module Dama
         raise NotImplementedError
       end
 
-      def draw_sprite(texture_handle:, x:, y:, w:, h:, color: Dama::Colors::WHITE, r: color.r, g: color.g, b: color.b, a: color.a)
+      def draw_sprite(texture_handle:, x:, y:, w:, h:, color: Dama::Colors::WHITE,
+                      r: color.r, g: color.g, b: color.b, a: color.a)
         raise NotImplementedError
       end
 
