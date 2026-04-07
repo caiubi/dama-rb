@@ -1,3 +1,5 @@
+require "fileutils"
+
 module Dama
   module Release
     module Packager

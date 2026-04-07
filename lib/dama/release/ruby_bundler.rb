@@ -1,3 +1,4 @@
+require "bundler"
 require "fileutils"
 require "rbconfig"
 
@@ -27,12 +28,11 @@ module Dama
       end
 
       def copy_ruby_runtime
-        ruby_bindir = RbConfig::CONFIG.fetch("bindir")
-        ruby_binary = File.join(ruby_bindir, RbConfig::CONFIG.fetch("ruby_install_name"))
+        ruby_binary = RbConfig.ruby
         dest_bindir = File.join(ruby_destination, "bin")
 
         FileUtils.mkdir_p(dest_bindir)
-        FileUtils.cp(ruby_binary, dest_bindir)
+        FileUtils.cp(ruby_binary, File.join(dest_bindir, File.basename(ruby_binary)))
 
         copy_shared_library
         copy_ruby_stdlib

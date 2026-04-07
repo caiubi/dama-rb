@@ -36,7 +36,7 @@ RSpec.describe Dama::Release::Packager::Windows do
         content = File.read(bat_path)
         ruby_version = RbConfig::CONFIG.fetch("ruby_version")
         ruby_arch = RbConfig::CONFIG.fetch("arch")
-        stdlib = "%DIR%ruby\\lib\\ruby\\#{ruby_version}"
+        stdlib = "%DIR%\\ruby\\lib\\ruby\\#{ruby_version}"
         expect(content).to include("RUBYLIB=#{stdlib};#{stdlib}\\#{ruby_arch}")
       end
     end

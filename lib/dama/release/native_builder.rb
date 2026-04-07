@@ -16,6 +16,8 @@ module Dama
         platform_key = Backend::Native::FfiBindings::LIBRARY_EXTENSIONS.keys.detect do |k|
           RUBY_PLATFORM.include?(k)
         end
+        raise PlatformDetector::UnsupportedPlatformError, "Unsupported platform: #{RUBY_PLATFORM}" unless platform_key
+
         extension = Backend::Native::FfiBindings::LIBRARY_EXTENSIONS.fetch(platform_key)
         File.join(RUST_CRATE_PATH, "target", "release", "libdama_native.#{extension}")
       end

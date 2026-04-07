@@ -60,7 +60,7 @@ RSpec.describe Dama::Release::TemplateRenderer do
 
       result = renderer.render
 
-      expect(result).to include("RUBYLIB=%DIR%ruby\\lib\\ruby\\3.4.0;%DIR%ruby\\lib\\ruby\\3.4.0\\x64-mingw-ucrt")
+      expect(result).to include("RUBYLIB=%DIR%\\ruby\\lib\\ruby\\3.4.0;%DIR%\\ruby\\lib\\ruby\\3.4.0\\x64-mingw-ucrt")
       expect(result).to start_with("@echo off")
     end
   end

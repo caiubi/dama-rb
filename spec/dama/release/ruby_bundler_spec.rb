@@ -50,8 +50,7 @@ RSpec.describe Dama::Release::RubyBundler do
 
           bundler.bundle
 
-          ruby_name = RbConfig::CONFIG.fetch("ruby_install_name")
-          ruby_bin = File.join(dest, "ruby", "bin", ruby_name)
+          ruby_bin = File.join(dest, "ruby", "bin", File.basename(RbConfig.ruby))
           expect(File.exist?(ruby_bin)).to be(true)
         end
       end

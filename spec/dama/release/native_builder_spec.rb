@@ -58,5 +58,15 @@ RSpec.describe Dama::Release::NativeBuilder do
 
       expect(builder.library_path).to include("ext/dama_native/target/release/")
     end
+
+    it "raises a descriptive error for unrecognized platforms" do
+      stub_const("RUBY_PLATFORM", "unknown-bsd")
+      builder = described_class.new
+
+      expect { builder.library_path }.to raise_error(
+        Dama::Release::PlatformDetector::UnsupportedPlatformError,
+        "Unsupported platform: unknown-bsd",
+      )
+    end
   end
 end

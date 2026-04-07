@@ -1,10 +1,11 @@
 @echo off
 set DIR=%~dp0
+if "%DIR:~-1%"=="\" set DIR=%DIR:~0,-1%
 
-set DAMA_NATIVE_LIB=%DIR%<%= native_lib_name %>
-set GEM_PATH=%DIR%vendor\bundle
-set BUNDLE_GEMFILE=%DIR%Gemfile
-set RUBYLIB=%DIR%ruby\lib\ruby\<%= ruby_version %>;%DIR%ruby\lib\ruby\<%= ruby_version %>\<%= ruby_arch %>
+set DAMA_NATIVE_LIB=%DIR%\<%= native_lib_name %>
+set GEM_PATH=%DIR%\vendor\bundle
+set BUNDLE_GEMFILE=%DIR%\Gemfile
+set RUBYLIB=%DIR%\ruby\lib\ruby\<%= ruby_version %>;%DIR%\ruby\lib\ruby\<%= ruby_version %>\<%= ruby_arch %>
 
-"%DIR%ruby\bin\ruby.exe" -r "%DIR%vendor\bundle\bundler\setup.rb" ^
+"%DIR%\ruby\bin\ruby.exe" -r "%DIR%\vendor\bundle\bundler\setup.rb" ^
   -e "require 'dama'; Dama.boot(root: '%DIR%')"
