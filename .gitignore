@@ -8,6 +8,7 @@ tmp/
 
 # Game project build outputs
 examples/*/dist/
+examples/*/release/
 
 # OS
 .DS_Store

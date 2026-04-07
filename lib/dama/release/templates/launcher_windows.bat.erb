@@ -1,0 +1,10 @@
+@echo off
+set DIR=%~dp0
+
+set DAMA_NATIVE_LIB=%DIR%<%= native_lib_name %>
+set GEM_PATH=%DIR%vendor\bundle
+set BUNDLE_GEMFILE=%DIR%Gemfile
+set RUBYLIB=%DIR%ruby\lib\ruby\<%= ruby_version %>;%DIR%ruby\lib\ruby\<%= ruby_version %>\<%= ruby_arch %>
+
+"%DIR%ruby\bin\ruby.exe" -r "%DIR%vendor\bundle\bundler\setup.rb" ^
+  -e "require 'dama'; Dama.boot(root: '%DIR%')"
