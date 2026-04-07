@@ -1,5 +1,6 @@
 require "spec_helper"
 require "tmpdir"
+require "zip"
 
 RSpec.describe Dama::Release::Archiver do
   def create_sample_project(dir:)
@@ -113,34 +114,18 @@ RSpec.describe Dama::Release::Archiver do
       end
     end
 
-    it "creates a valid zip that starts with the PK signature" do
-      Dir.mktmpdir do |dir|
-        source = create_sample_project(dir:)
-
-        archive_path = described_class.new(source_path: source).create_zip
-
-        magic = File.binread(archive_path, 4)
-        expect(magic).to eq("PK\x03\x04")
-      end
-    end
-
     it "includes all files with correct relative paths" do
       Dir.mktmpdir do |dir|
         source = create_sample_project(dir:)
 
         archive_path = described_class.new(source_path: source).create_zip
 
-        # Parse the central directory to extract file names
-        data = File.binread(archive_path)
-        names = []
-        offset = 0
-        while (pos = data.index("PK\x01\x02", offset))
-          name_len = data[pos + 28, 2].unpack1("v")
-          names << data[pos + 46, name_len]
-          offset = pos + 46 + name_len
+        entries = []
+        Zip::File.open(archive_path) do |zipfile|
+          zipfile.each { |entry| entries << entry.name }
         end
 
-        expect(names).to include("MyGame/config.rb", "MyGame/game/main.rb", "MyGame/assets/sprite.png")
+        expect(entries).to include("MyGame/config.rb", "MyGame/game/main.rb", "MyGame/assets/sprite.png")
       end
     end
 
