@@ -76,7 +76,7 @@ jobs:
           path: |
             ext/dama_native/target
             ~/.cargo/registry
-          key: rust-${{ runner.os }}-${{ hashFiles('ext/dama_native/Cargo.lock') }}
+          key: rust-rspec-${{ runner.os }}-${{ hashFiles('ext/dama_native/Cargo.lock') }}
       - name: Build native extension
         run: cd ext/dama_native && cargo build --release
       - name: Run specs
