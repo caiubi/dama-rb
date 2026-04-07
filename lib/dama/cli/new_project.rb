@@ -62,7 +62,7 @@ module Dama
             require "bundler/setup"
             require "dama"
 
-            Dama.boot(root: File.expand_path("..", __dir__))
+            Dama::Cli.run(args: ARGV, root: File.expand_path("..", __dir__))
           RUBY
           executable: true,
         },

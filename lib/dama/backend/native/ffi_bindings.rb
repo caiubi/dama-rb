@@ -18,10 +18,19 @@ module Dama
           "mswin" => "dll",
         }.freeze
 
+        # Packaged games set DAMA_NATIVE_LIB to point at their bundled
+        # shared library. Development mode falls back to the Cargo build output.
+        LIBRARY_PATH_SOURCES = {
+          true => -> { ENV.fetch("DAMA_NATIVE_LIB") },
+          false => lambda {
+            platform_key = LIBRARY_EXTENSIONS.keys.detect { |k| RUBY_PLATFORM.include?(k) }
+            extension = LIBRARY_EXTENSIONS.fetch(platform_key)
+            File.expand_path("../../../../ext/dama_native/target/release/libdama_native.#{extension}", __dir__)
+          },
+        }.freeze
+
         def self.library_path
-          platform_key = LIBRARY_EXTENSIONS.keys.detect { |k| RUBY_PLATFORM.include?(k) }
-          extension = LIBRARY_EXTENSIONS.fetch(platform_key)
-          File.expand_path("../../../../ext/dama_native/target/release/libdama_native.#{extension}", __dir__)
+          LIBRARY_PATH_SOURCES.fetch(ENV.key?("DAMA_NATIVE_LIB")).call
         end
 
         ffi_lib library_path

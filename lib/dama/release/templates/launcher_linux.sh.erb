@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+DIR="$(cd "$(dirname "$0")" && pwd)"
+
+export DAMA_NATIVE_LIB="$DIR/<%= native_lib_name %>"
+export GEM_PATH="$DIR/vendor/bundle"
+export BUNDLE_GEMFILE="$DIR/Gemfile"
+export RUBYLIB="$DIR/ruby/lib/ruby/<%= ruby_version %>:$DIR/ruby/lib/ruby/<%= ruby_version %>/<%= ruby_arch %>"
+
+exec "$DIR/ruby/bin/ruby" -r "$DIR/vendor/bundle/bundler/setup.rb" \
+  -e "require 'dama'; Dama.boot(root: \"$DIR\")"

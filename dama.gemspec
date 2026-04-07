@@ -31,7 +31,9 @@ Gem::Specification.new do |spec|
 
   spec.files = Dir[
     "lib/**/*.rb",
+    "lib/**/*.erb",
     "lib/**/*.html",
+    "lib/**/defaults/*",
     "exe/*",
     "ext/**/*.rs",
     "ext/**/Cargo.toml",
@@ -43,6 +45,7 @@ Gem::Specification.new do |spec|
   ]
 
   spec.add_dependency "ffi", "~> 1.17"
+  spec.add_dependency "ruby-macho", "~> 5.0"
   spec.add_dependency "ruby_wasm", "~> 2.8"
   spec.add_dependency "webrick", "~> 1.9"
   spec.add_dependency "zeitwerk", "~> 2.7"

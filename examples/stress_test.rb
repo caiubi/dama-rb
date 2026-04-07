@@ -6,7 +6,7 @@
 require_relative "../lib/dama"
 
 backend = Dama::Backend::Native.new
-config = Dama::Configuration.new(width: 800, height: 600, title: "dama-rb: Stress Test")
+config = Dama::Configuration.new(width: 800, height: 600, title: "Stress Test")
 backend.initialize_engine(configuration: config)
 
 WIDTH = 800.0
