@@ -22,7 +22,10 @@ RSpec.describe Dama::Backend::Native::FfiBindings do
       allow(ENV).to receive(:fetch).and_call_original
       allow(ENV).to receive(:fetch).with("DAMA_NATIVE_LIB", nil).and_return(nil)
 
-      gem_path = File.expand_path("../../../../lib/dama/native/libdama_native.dylib", __dir__)
+      platform_key = described_class::LIBRARY_EXTENSIONS.keys.detect { |k| RUBY_PLATFORM.include?(k) }
+      extension = described_class::LIBRARY_EXTENSIONS.fetch(platform_key)
+      gem_path = File.expand_path("../../../../lib/dama/native/libdama_native.#{extension}", __dir__)
+
       allow(File).to receive(:exist?).and_call_original
       allow(File).to receive(:exist?).with(gem_path).and_return(true)
 
@@ -40,9 +43,11 @@ RSpec.describe Dama::Backend::Native::FfiBindings do
     it "uses the platform-appropriate extension" do
       allow(ENV).to receive(:fetch).and_call_original
       allow(ENV).to receive(:fetch).with("DAMA_NATIVE_LIB", nil).and_return(nil)
-      stub_const("RUBY_PLATFORM", "arm64-darwin24")
 
-      expect(described_class.library_path).to end_with(".dylib")
+      platform_key = described_class::LIBRARY_EXTENSIONS.keys.detect { |k| RUBY_PLATFORM.include?(k) }
+      extension = described_class::LIBRARY_EXTENSIONS.fetch(platform_key)
+
+      expect(described_class.library_path).to end_with(".#{extension}")
     end
   end
 
