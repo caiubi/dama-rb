@@ -64,9 +64,11 @@ module Dama
         end
       end
 
+      # :nocov: — MachO::Tools.dylibs only works on Mach-O binaries (macOS)
       def linked_dylibs(path:)
         MachO::Tools.dylibs(path)
       end
+      # :nocov:
 
       def copy_library(source:, destination:)
         return if File.exist?(destination)
@@ -87,9 +89,11 @@ module Dama
         processed.each { |path| codesign(path:) }
       end
 
+      # :nocov: — codesign is a macOS-only system utility
       def codesign(path:)
         system("codesign", "--sign", "-", "--force", path)
       end
+      # :nocov:
     end
   end
 end
