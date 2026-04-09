@@ -81,3 +81,50 @@ jobs:
         run: cd ext/dama_native && cargo build --release
       - name: Run specs
         run: bundle exec rspec
+
+  release-examples:
+    name: Release ${{ matrix.example }} (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest]
+        example: [checkers, breakout, demo]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4"
+          bundler-cache: true
+      - name: Install system libraries
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libasound2-dev mesa-vulkan-drivers
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ext/dama_native/target
+            ~/.cargo/registry
+          key: rust-release-${{ runner.os }}-${{ hashFiles('ext/dama_native/Cargo.lock') }}
+      - name: Install example dependencies
+        working-directory: examples/${{ matrix.example }}
+        run: bundle install
+      - name: Build release
+        working-directory: examples/${{ matrix.example }}
+        run: bundle exec bin/dama release
+      - name: Verify release archive exists
+        working-directory: examples/${{ matrix.example }}
+        run: |
+          archive=$(ls release/*.zip release/*.tar.gz 2>/dev/null | head -1)
+          if [ -z "$archive" ]; then
+            echo "No release archive found"
+            ls -la release/ 2>/dev/null || echo "release/ directory not found"
+            exit 1
+          fi
+          echo "Archive: $archive ($(du -h "$archive" | cut -f1))"
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.example }}-${{ runner.os }}
+          path: examples/${{ matrix.example }}/release/*
+          retention-days: 7
