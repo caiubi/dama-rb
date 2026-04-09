@@ -101,4 +101,17 @@ RSpec.shared_examples "a native packager" do
       expect(Dir.children(release_path)).not_to include("icon.#{icon_extension}")
     end
   end
+
+  it "skips archiving when archive: false" do
+    Dir.mktmpdir do |dir|
+      create_game_project(dir)
+      stub_builds(project_root: dir, extension: lib_extension)
+
+      described_class.new(project_root: dir).package(archive: false)
+
+      release_path = release_dir_for.call(dir, "Test Game")
+      expect(File.directory?(release_path)).to be(true)
+      expect(Dama::Release::Archiver).not_to have_received(:new)
+    end
+  end
 end

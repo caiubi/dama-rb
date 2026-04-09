@@ -11,7 +11,9 @@
 <p align="center">
   <strong>Write games in Ruby. Render with wgpu. Run native or in the browser.</strong>
   <br />
-  <a href="https://github.com/caiubi/dama-rb">View Demo</a>
+  <a href="https://caiubi.github.io/dama-rb/">Play Live Demo (Checkers)</a>
+  <br />
+  <em>Requires Chrome 113+ or Edge 113+ (WebGPU)</em>
 </p>
 
 <p align="center">

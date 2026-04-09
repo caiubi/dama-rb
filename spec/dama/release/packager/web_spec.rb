@@ -67,5 +67,24 @@ RSpec.describe Dama::Release::Packager::Web do
         expect(archiver).to have_received(:create_zip)
       end
     end
+
+    it "skips archiving when archive: false" do
+      Dir.mktmpdir do |dir|
+        dist_dir = File.join(dir, "dist")
+        FileUtils.mkdir_p(dist_dir)
+        File.write(File.join(dist_dir, "index.html"), "<html/>")
+
+        builder = instance_double(Dama::WebBuilder, build: nil)
+        allow(Dama::WebBuilder).to receive(:new).and_return(builder)
+        stub_archiver
+
+        described_class.new(project_root: dir).package(archive: false)
+
+        release_dir = File.join(dir, "release", "web")
+        expect(File.directory?(release_dir)).to be(true)
+        expect(File.read(File.join(release_dir, "index.html"))).to eq("<html/>")
+        expect(Dama::Release::Archiver).not_to have_received(:new)
+      end
+    end
   end
 end

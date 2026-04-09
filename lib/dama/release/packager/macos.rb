@@ -13,7 +13,7 @@ module Dama
           @icon_provider = IconProvider.new(project_root:, platform: :macos)
         end
 
-        def package
+        def package(archive: true)
           native_library_path = NativeBuilder.new.build
           prepare_app_structure
           ruby_path = RubyBundler.new(destination: resources_path, project_root:).bundle
@@ -23,6 +23,8 @@ module Dama
           copy_icon
           write_info_plist
           write_launcher_script(native_library_path:)
+
+          return puts "macOS release created: #{app_path}" unless archive
 
           archive_path = Archiver.new(source_path: app_path).create_macos_zip
           puts "macOS release created: #{archive_path}"
