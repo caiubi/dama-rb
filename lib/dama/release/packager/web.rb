@@ -10,7 +10,7 @@ module Dama
           @project_root = project_root
         end
 
-        def package
+        def package(archive: true)
           builder = Dama::WebBuilder.new(project_root:)
           builder.build
 
@@ -18,6 +18,8 @@ module Dama
           FileUtils.rm_rf(release_dir)
           FileUtils.mkdir_p(File.dirname(release_dir))
           FileUtils.cp_r(File.join(project_root, "dist"), release_dir)
+
+          return puts "Web release created: #{release_dir}" unless archive
 
           archive_path = Archiver.new(source_path: release_dir).create_zip
           puts "Web release created: #{archive_path}"

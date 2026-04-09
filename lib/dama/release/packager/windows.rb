@@ -12,7 +12,7 @@ module Dama
           @icon_provider = IconProvider.new(project_root:, platform: :windows)
         end
 
-        def package
+        def package(archive: true)
           native_library_path = NativeBuilder.new.build
           prepare_structure
           RubyBundler.new(destination: release_path, project_root:).bundle
@@ -20,6 +20,8 @@ module Dama
           GameFileCopier.new(project_root:, destination: release_path).copy
           copy_icon
           write_launcher_script(native_library_path:)
+
+          return puts "Windows release created: #{release_path}" unless archive
 
           archive_path = Archiver.new(source_path: release_path).create_zip
           puts "Windows release created: #{archive_path}"

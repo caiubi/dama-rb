@@ -30,15 +30,24 @@ module Dama
 
       def execute
         packager_class = PACKAGERS.fetch(platform)
-        packager_class.new(project_root: root).package
+        packager_class.new(project_root: root).package(archive:)
       end
 
       private
 
       attr_reader :args, :root
 
+      def archive
+        !flags.include?("--no-archive")
+      end
+
+      def flags
+        args.select { |arg| arg.start_with?("--") }
+      end
+
       def platform
-        PLATFORM_RESOLVERS.fetch(args.first, DEFAULT_RESOLVER).call
+        platform_arg = args.reject { |arg| arg.start_with?("--") }.first
+        PLATFORM_RESOLVERS.fetch(platform_arg, DEFAULT_RESOLVER).call
       end
     end
   end

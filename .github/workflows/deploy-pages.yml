@@ -1,0 +1,97 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main, feat/github-pages-deploy]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build-web:
+    name: Build Checkers (WebGPU)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4"
+          bundler-cache: true
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ext/dama_native/target
+            ~/.cargo/registry
+            ~/.cargo/bin
+          key: rust-web-${{ runner.os }}-${{ hashFiles('ext/dama_native/Cargo.lock') }}
+          restore-keys: |
+            rust-web-${{ runner.os }}-
+
+      - name: Determine wasm-bindgen version
+        id: wb
+        run: |
+          version=$(grep -A1 '^name = "wasm-bindgen"$' ext/dama_native/Cargo.lock \
+            | grep '^version' | head -1 \
+            | sed 's/version = "\(.*\)"/\1/')
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Install wasm-bindgen-cli
+        run: |
+          if wasm-bindgen --version 2>/dev/null | grep -q "${{ steps.wb.outputs.version }}"; then
+            echo "wasm-bindgen-cli ${{ steps.wb.outputs.version }} already installed"
+          else
+            cargo install wasm-bindgen-cli@${{ steps.wb.outputs.version }} --locked
+          fi
+
+      - name: Install checkers dependencies
+        working-directory: examples/checkers
+        run: |
+          bundle lock --add-platform x86_64-linux-gnu
+          bundle install
+
+      - name: Build web version
+        working-directory: examples/checkers
+        run: bundle exec bin/dama release web --no-archive
+
+      - name: Verify build output
+        working-directory: examples/checkers
+        run: |
+          echo "=== dist/ contents ==="
+          ls -lh dist/
+          ls -lh dist/pkg/
+          test -f dist/index.html
+          test -f dist/game.wasm
+          test -f dist/ruby_base.wasm
+          test -f dist/ruby_wasm.js
+          test -f dist/pkg/dama_native.js
+          test -f dist/pkg/dama_native_bg.wasm
+          echo "Build verified OK"
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: examples/checkers/dist
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build-web
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

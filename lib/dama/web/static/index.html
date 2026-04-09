@@ -16,6 +16,27 @@
   <script type="module">
     // 1. Load the Rust wgpu renderer (compiled to wasm).
     const loading = document.getElementById("loading");
+
+    // WebGPU is required by the Rust/wgpu renderer. Show a clear
+    // message instead of a cryptic wasm error on unsupported browsers.
+    if (!navigator.gpu) {
+      loading.innerHTML = [
+        "<strong>WebGPU is not supported in this browser.</strong>",
+        "<br><br>",
+        "dama-rb requires WebGPU to render. Please use one of these browsers:",
+        "<br>",
+        "\u2022 Chrome 113+ or Edge 113+",
+        "<br>",
+        "\u2022 Firefox Nightly (with dom.webgpu.enabled)",
+        "<br><br>",
+        '<a href="https://github.com/caiubi/dama-rb" style="color:#6af">Back to GitHub</a>',
+      ].join("");
+      loading.style.maxWidth = "400px";
+      loading.style.textAlign = "center";
+      loading.style.lineHeight = "1.6";
+      throw new Error("WebGPU not supported");
+    }
+
     loading.textContent = "Loading renderer...";
 
     // Set canvas to physical pixel resolution for Retina sharpness.
