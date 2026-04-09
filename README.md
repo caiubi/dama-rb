@@ -14,6 +14,12 @@
   <a href="https://github.com/caiubi/dama-rb">View Demo</a>
 </p>
 
+<p align="center">
+  <a href="https://github.com/caiubi/dama-rb/actions/workflows/ci.yml"><img src="https://github.com/caiubi/dama-rb/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"></a>
+  <a href="https://github.com/caiubi/dama-rb"><img src="https://img.shields.io/badge/coverage-100%25-brightgreen" alt="Coverage"></a>
+  <a href="https://rubygems.org/gems/dama"><img src="https://img.shields.io/gem/v/dama" alt="Gem Version"></a>
+</p>
+
 ---
 
 dama-rb lets you build 2D games using an expressive Ruby DSL. The engine handles rendering via a Rust/wgpu backend (Metal, Vulkan, DX12, WebGPU), so your game code is pure Ruby while GPU-accelerated graphics run at native speed.
