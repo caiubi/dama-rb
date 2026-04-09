@@ -6,6 +6,7 @@ group :development, :test do
   gem "capybara", "~> 3.40", require: false
   gem "chunky_png", "~> 1.4", require: false
   gem "cuprite", "~> 0.17", require: false
+  gem "overcommit", "~> 0.64", require: false
   gem "rackup", "~> 2.2", require: false
   gem "rspec", "~> 3.13"
   gem "rubocop", "~> 1.75", require: false

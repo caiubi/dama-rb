@@ -1,0 +1,25 @@
+plugin_directory: ".overcommit"
+
+PreCommit:
+  RuboCop:
+    enabled: true
+    on_warn: fail
+    command: ["bundle", "exec", "rubocop"]
+
+  Clippy:
+    enabled: true
+    description: "Run cargo clippy on Rust code"
+    include:
+      - "ext/dama_native/src/**/*.rs"
+      - "ext/dama_native/Cargo.toml"
+      - "ext/dama_native/Cargo.lock"
+
+CommitMsg:
+  ConventionalCommit:
+    enabled: true
+    description: "Validate conventional commit format"
+
+PrePush:
+  RSpec:
+    enabled: true
+    command: ["bundle", "exec", "rspec"]
