@@ -14,8 +14,6 @@ jobs:
         include:
           - runner: macos-14
             platform: arm64-darwin
-          - runner: macos-13
-            platform: x86_64-darwin
           - runner: ubuntu-latest
             platform: x86_64-linux
     steps:
