@@ -12,6 +12,9 @@ coverage/
 .ruby-lsp/
 tmp/
 
+# Overcommit local overrides
+.local-overcommit.yml
+
 # Game project build outputs
 examples/*/dist/
 examples/*/release/
