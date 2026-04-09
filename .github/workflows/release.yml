@@ -44,7 +44,7 @@ jobs:
 
       - name: Smoke test
         run: |
-          gem install --local dama-*-${{ matrix.platform }}.gem
+          gem install dama-*-${{ matrix.platform }}.gem
           ruby -e "require 'dama'; puts \"dama #{Dama::VERSION} loaded OK\""
 
       - name: Upload gem artifact
