@@ -18,19 +18,38 @@ module Dama
           "mswin" => "dll",
         }.freeze
 
-        # Packaged games set DAMA_NATIVE_LIB to point at their bundled
-        # shared library. Development mode falls back to the Cargo build output.
-        LIBRARY_PATH_SOURCES = {
-          true => -> { ENV.fetch("DAMA_NATIVE_LIB") },
-          false => lambda {
+        # Library resolution order:
+        # 1. DAMA_NATIVE_LIB env var — packaged games set this to their bundled copy
+        # 2. lib/dama/native/ — pre-compiled platform gems and source gem extconf.rb
+        #    install the shared library here
+        # 3. ext/dama_native/target/release/ — local development with cargo build
+        LIBRARY_PATH_RESOLVERS = [
+          lambda {
+            path = ENV.fetch("DAMA_NATIVE_LIB", nil)
+            path if path && File.exist?(path)
+          },
+          lambda {
             platform_key = LIBRARY_EXTENSIONS.keys.detect { |k| RUBY_PLATFORM.include?(k) }
             extension = LIBRARY_EXTENSIONS.fetch(platform_key)
-            File.expand_path("../../../../ext/dama_native/target/release/libdama_native.#{extension}", __dir__)
+            path = File.expand_path("../../native/libdama_native.#{extension}", __dir__)
+            path if File.exist?(path)
           },
-        }.freeze
+          lambda {
+            platform_key = LIBRARY_EXTENSIONS.keys.detect { |k| RUBY_PLATFORM.include?(k) }
+            extension = LIBRARY_EXTENSIONS.fetch(platform_key)
+            path = File.expand_path("../../../../ext/dama_native/target/release/libdama_native.#{extension}", __dir__)
+            path if File.exist?(path)
+          },
+        ].freeze
 
         def self.library_path
-          LIBRARY_PATH_SOURCES.fetch(ENV.key?("DAMA_NATIVE_LIB")).call
+          LIBRARY_PATH_RESOLVERS.each do |resolver|
+            path = resolver.call
+            return path if path
+          end
+
+          raise "dama native library not found. Run `cargo build --release` in ext/dama_native/ " \
+                "or install a platform-specific gem."
         end
 
         ffi_lib library_path

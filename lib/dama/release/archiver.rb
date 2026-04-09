@@ -1,7 +1,15 @@
 require "fileutils"
 require "pathname"
-require "zip"
 require "zlib"
+
+begin
+  require "zip"
+rescue LoadError
+  # :nocov:
+  raise LoadError,
+        "rubyzip gem is required for release packaging. Install it with: gem install rubyzip"
+  # :nocov:
+end
 
 module Dama
   module Release

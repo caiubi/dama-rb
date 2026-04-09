@@ -1,6 +1,14 @@
 require "fileutils"
-require "macho"
 require "pathname"
+
+begin
+  require "macho"
+rescue LoadError
+  # :nocov:
+  raise LoadError,
+        "ruby-macho gem is required for macOS release packaging. Install it with: gem install ruby-macho"
+  # :nocov:
+end
 
 module Dama
   module Release

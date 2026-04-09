@@ -2,21 +2,44 @@ require "spec_helper"
 
 RSpec.describe Dama::Backend::Native::FfiBindings do
   describe ".library_path" do
-    it "returns ENV['DAMA_NATIVE_LIB'] when set" do
-      allow(ENV).to receive(:key?).with("DAMA_NATIVE_LIB").and_return(true)
-      allow(ENV).to receive(:fetch).with("DAMA_NATIVE_LIB").and_return("/custom/path/libdama.dylib")
+    it "returns ENV['DAMA_NATIVE_LIB'] when set and the file exists" do
+      allow(ENV).to receive(:fetch).and_call_original
+      allow(ENV).to receive(:fetch).with("DAMA_NATIVE_LIB", nil).and_return("/custom/path/libdama.dylib")
+      allow(File).to receive(:exist?).and_call_original
+      allow(File).to receive(:exist?).with("/custom/path/libdama.dylib").and_return(true)
 
       expect(described_class.library_path).to eq("/custom/path/libdama.dylib")
     end
 
-    it "returns the Cargo build output path when ENV is not set" do
-      allow(ENV).to receive(:key?).with("DAMA_NATIVE_LIB").and_return(false)
+    it "falls back to the development path when ENV is not set" do
+      allow(ENV).to receive(:fetch).and_call_original
+      allow(ENV).to receive(:fetch).with("DAMA_NATIVE_LIB", nil).and_return(nil)
 
       expect(described_class.library_path).to include("ext/dama_native/target/release/libdama_native")
     end
 
-    it "uses the platform-appropriate extension in development mode" do
-      allow(ENV).to receive(:key?).with("DAMA_NATIVE_LIB").and_return(false)
+    it "prefers the gem-installed path over the development path" do
+      allow(ENV).to receive(:fetch).and_call_original
+      allow(ENV).to receive(:fetch).with("DAMA_NATIVE_LIB", nil).and_return(nil)
+
+      gem_path = File.expand_path("../../../../lib/dama/native/libdama_native.dylib", __dir__)
+      allow(File).to receive(:exist?).and_call_original
+      allow(File).to receive(:exist?).with(gem_path).and_return(true)
+
+      expect(described_class.library_path).to eq(gem_path)
+    end
+
+    it "raises when no library is found anywhere" do
+      allow(ENV).to receive(:fetch).and_call_original
+      allow(ENV).to receive(:fetch).with("DAMA_NATIVE_LIB", nil).and_return(nil)
+      allow(File).to receive(:exist?).and_return(false)
+
+      expect { described_class.library_path }.to raise_error(RuntimeError, /native library not found/)
+    end
+
+    it "uses the platform-appropriate extension" do
+      allow(ENV).to receive(:fetch).and_call_original
+      allow(ENV).to receive(:fetch).with("DAMA_NATIVE_LIB", nil).and_return(nil)
       stub_const("RUBY_PLATFORM", "arm64-darwin24")
 
       expect(described_class.library_path).to end_with(".dylib")
