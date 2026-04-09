@@ -1,4 +1,5 @@
 require "fileutils"
+require "pathname"
 require "zip"
 require "zlib"
 
@@ -45,9 +46,10 @@ module Dama
         archive_path = "#{source_path}.zip"
         FileUtils.rm_f(archive_path)
 
+        source_pathname = Pathname.new(source_path)
         Zip::File.open(archive_path, create: true) do |zipfile|
           collect_files.each do |file_path|
-            relative = "#{source_name}/#{file_path.delete_prefix("#{source_path}/")}"
+            relative = Pathname.new(file_path).relative_path_from(source_pathname.parent).to_s
             zipfile.add(relative, file_path)
           end
         end
@@ -70,16 +72,18 @@ module Dama
       end
 
       def write_directory_to_tar(tar:, dir:, prefix:)
+        dir_pathname = Pathname.new(dir)
+
         Dir.glob(File.join(dir, "**", "*"), File::FNM_DOTMATCH).sort.each do |entry|
           next if File.basename(entry).match?(/\A\.\.?\z/)
 
-          relative = "#{prefix}/#{entry.delete_prefix("#{dir}/")}"
+          relative = "#{prefix}/#{Pathname.new(entry).relative_path_from(dir_pathname)}"
           stat = File.stat(entry)
 
           next if stat.directory?
 
           tar.add_file_simple(relative, stat.mode, stat.size) do |io|
-            File.open(entry, "rb") { |f| io.write(f.read) }
+            File.open(entry, "rb") { |f| IO.copy_stream(f, io) }
           end
         end
       end

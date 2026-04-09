@@ -50,11 +50,6 @@ module Dama
         ripper
       ].freeze
 
-      # Patterns for files that are never needed at runtime.
-      EXCLUDED_NATIVE_PATTERNS = %w[
-        *.dSYM
-      ].freeze
-
       def initialize(stdlib_dir:, arch_dir:)
         @stdlib_dir = stdlib_dir
         @arch_dir = arch_dir
@@ -123,7 +118,7 @@ module Dama
           File.join(trans_dir, "transdb.so"),
         ].select { |f| File.exist?(f) }
 
-        # Remove everything, then restore essentials
+        # Remove everything except the essential encoding files
         non_essential_entries(enc_dir:, essential_files:).each { |e| FileUtils.rm_rf(e) }
         non_essential_entries(enc_dir: trans_dir, essential_files: essential_trans).each { |e| FileUtils.rm_rf(e) }
       end
