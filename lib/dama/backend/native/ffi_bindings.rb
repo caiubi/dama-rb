@@ -18,6 +18,22 @@ module Dama
           "mswin" => "dll",
         }.freeze
 
+        # Rust omits the "lib" prefix on Windows cdylibs (dama_native.dll
+        # instead of libdama_native.dll), so we need platform-aware names.
+        LIBRARY_PREFIXES = {
+          "darwin" => "lib",
+          "linux" => "lib",
+          "mingw" => "",
+          "mswin" => "",
+        }.freeze
+
+        def self.library_filename
+          platform_key = LIBRARY_EXTENSIONS.keys.detect { |k| RUBY_PLATFORM.include?(k) }
+          prefix = LIBRARY_PREFIXES.fetch(platform_key)
+          extension = LIBRARY_EXTENSIONS.fetch(platform_key)
+          "#{prefix}dama_native.#{extension}"
+        end
+
         # Library resolution order:
         # 1. DAMA_NATIVE_LIB env var — packaged games set this to their bundled copy
         # 2. lib/dama/native/ — pre-compiled platform gems and source gem extconf.rb
@@ -29,15 +45,11 @@ module Dama
             path if path && File.exist?(path)
           },
           lambda {
-            platform_key = LIBRARY_EXTENSIONS.keys.detect { |k| RUBY_PLATFORM.include?(k) }
-            extension = LIBRARY_EXTENSIONS.fetch(platform_key)
-            path = File.expand_path("../../native/libdama_native.#{extension}", __dir__)
+            path = File.expand_path("../../native/#{library_filename}", __dir__)
             path if File.exist?(path)
           },
           lambda {
-            platform_key = LIBRARY_EXTENSIONS.keys.detect { |k| RUBY_PLATFORM.include?(k) }
-            extension = LIBRARY_EXTENSIONS.fetch(platform_key)
-            path = File.expand_path("../../../../ext/dama_native/target/release/libdama_native.#{extension}", __dir__)
+            path = File.expand_path("../../../../ext/dama_native/target/release/#{library_filename}", __dir__)
             path if File.exist?(path)
           },
         ].freeze

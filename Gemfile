@@ -10,7 +10,6 @@ group :development, :test do
   gem "rspec", "~> 3.13"
   gem "rubocop", "~> 1.75", require: false
   gem "rubocop-rspec", "~> 3.6", require: false
-  gem "ruby_wasm", "~> 2.8"
   gem "simplecov", "~> 0.22", require: false
 
   # Optional runtime dependencies needed for release packaging and web builds.

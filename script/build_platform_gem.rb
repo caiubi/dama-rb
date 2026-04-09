@@ -16,20 +16,20 @@ require "rubygems/package"
 NATIVE_DIR = File.expand_path("../lib/dama/native", __dir__)
 EXT_DIR = File.expand_path("../ext/dama_native", __dir__)
 
-LIBRARY_EXTENSIONS = {
-  "darwin" => "dylib",
-  "linux" => "so",
-  "mingw" => "dll",
-  "mswin" => "dll",
+LIBRARY_NAMES = {
+  "darwin" => "libdama_native.dylib",
+  "linux" => "libdama_native.so",
+  "mingw" => "dama_native.dll",
+  "mswin" => "dama_native.dll",
 }.freeze
 
 def detect_platform
   Gem::Platform.local.to_s
 end
 
-def library_extension_for(platform)
-  key = LIBRARY_EXTENSIONS.keys.detect { |k| platform.include?(k) }
-  LIBRARY_EXTENSIONS.fetch(key) { abort "Unknown platform: #{platform}" }
+def library_filename_for(platform)
+  key = LIBRARY_NAMES.keys.detect { |k| platform.include?(k) }
+  LIBRARY_NAMES.fetch(key) { abort "Unknown platform: #{platform}" }
 end
 
 def build_native_library!
@@ -41,21 +41,23 @@ def build_native_library!
 end
 
 def copy_library_to_native_dir!(platform)
-  ext = library_extension_for(platform)
-  source = File.join(EXT_DIR, "target", "release", "libdama_native.#{ext}")
+  filename = library_filename_for(platform)
+  source = File.join(EXT_DIR, "target", "release", filename)
   abort "Compiled library not found at #{source}" unless File.exist?(source)
 
   FileUtils.mkdir_p(NATIVE_DIR)
   FileUtils.cp(source, NATIVE_DIR)
-  puts "=== Copied libdama_native.#{ext} to lib/dama/native/ ==="
+  puts "=== Copied #{filename} to lib/dama/native/ ==="
 end
 
 def codesign_if_macos!(platform)
   return unless platform.include?("darwin")
 
-  ext = library_extension_for(platform)
-  lib_path = File.join(NATIVE_DIR, "libdama_native.#{ext}")
-  system("codesign", "--sign", "-", "--force", lib_path)
+  filename = library_filename_for(platform)
+  lib_path = File.join(NATIVE_DIR, filename)
+  success = system("codesign", "--sign", "-", "--force", lib_path)
+  abort "codesign failed for #{lib_path}" unless success
+
   puts "=== Ad-hoc signed #{lib_path} ==="
 end
 
@@ -71,8 +73,8 @@ def build_platform_gem!(platform)
   # Remove Rust source files, add compiled binary
   spec.files.reject! { |f| f.start_with?("ext/") }
 
-  ext = library_extension_for(platform)
-  native_lib = "lib/dama/native/libdama_native.#{ext}"
+  filename = library_filename_for(platform)
+  native_lib = "lib/dama/native/#{filename}"
   spec.files << native_lib
 
   puts "=== Building gem: #{spec.full_name} ==="

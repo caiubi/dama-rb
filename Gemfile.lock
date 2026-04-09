@@ -3,6 +3,7 @@ PATH
   specs:
     dama (0.1.0)
       ffi (~> 1.17)
+      ruby_wasm (~> 2.8)
       zeitwerk (~> 2.7)
 
 GEM
@@ -145,7 +146,6 @@ DEPENDENCIES
   rubocop (~> 1.75)
   rubocop-rspec (~> 3.6)
   ruby-macho (~> 5.0)
-  ruby_wasm (~> 2.8)
   rubyzip (~> 2.4)
   simplecov (~> 0.22)
   webrick (~> 1.9)

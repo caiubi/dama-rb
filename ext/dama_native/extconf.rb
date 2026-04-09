@@ -24,16 +24,16 @@ def verify_rust_toolchain!
   MSG
 end
 
-LIBRARY_EXTENSIONS = {
-  "darwin" => "dylib",
-  "linux" => "so",
-  "mingw" => "dll",
-  "mswin" => "dll",
+LIBRARY_NAMES = {
+  "darwin" => "libdama_native.dylib",
+  "linux" => "libdama_native.so",
+  "mingw" => "dama_native.dll",
+  "mswin" => "dama_native.dll",
 }.freeze
 
-def library_extension
-  platform_key = LIBRARY_EXTENSIONS.keys.detect { |k| RUBY_PLATFORM.include?(k) }
-  LIBRARY_EXTENSIONS.fetch(platform_key) do
+def library_filename
+  platform_key = LIBRARY_NAMES.keys.detect { |k| RUBY_PLATFORM.include?(k) }
+  LIBRARY_NAMES.fetch(platform_key) do
     abort "Unsupported platform: #{RUBY_PLATFORM}"
   end
 end
@@ -47,12 +47,12 @@ def cargo_build!
 end
 
 def install_library!
-  ext = library_extension
-  source = File.join(__dir__, "target", "release", "libdama_native.#{ext}")
+  filename = library_filename
+  source = File.join(__dir__, "target", "release", filename)
   dest_dir = File.expand_path("../../lib/dama/native", __dir__)
   FileUtils.mkdir_p(dest_dir)
   FileUtils.cp(source, dest_dir)
-  puts "=== Installed libdama_native.#{ext} to lib/dama/native/ ==="
+  puts "=== Installed #{filename} to lib/dama/native/ ==="
 end
 
 def write_dummy_makefile!
