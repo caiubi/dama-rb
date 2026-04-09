@@ -1,3 +1,7 @@
 source "https://rubygems.org"
 
 gem "dama", path: "../.."
+
+# Optional dependencies required by `dama release`
+gem "ruby-macho", "~> 5.0"
+gem "rubyzip", "~> 2.4"

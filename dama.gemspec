@@ -29,25 +29,25 @@ Gem::Specification.new do |spec|
   spec.bindir = "exe"
   spec.executables = ["dama"]
 
+  spec.extensions = ["ext/dama_native/extconf.rb"]
+
   spec.files = Dir[
     "lib/**/*.rb",
     "lib/**/*.erb",
     "lib/**/*.html",
     "lib/**/defaults/*",
     "exe/*",
-    "ext/**/*.rs",
-    "ext/**/Cargo.toml",
-    "ext/**/Cargo.lock",
-    "ext/**/.cargo/config.toml",
+    "ext/dama_native/src/**/*.rs",
+    "ext/dama_native/Cargo.toml",
+    "ext/dama_native/Cargo.lock",
+    "ext/dama_native/.cargo/config.toml",
+    "ext/dama_native/extconf.rb",
     "dama-logo.svg",
     "README.md",
     "LICENSE",
   ]
 
   spec.add_dependency "ffi", "~> 1.17"
-  spec.add_dependency "ruby-macho", "~> 5.0"
   spec.add_dependency "ruby_wasm", "~> 2.8"
-  spec.add_dependency "rubyzip", "~> 2.4"
-  spec.add_dependency "webrick", "~> 1.9"
   spec.add_dependency "zeitwerk", "~> 2.7"
 end

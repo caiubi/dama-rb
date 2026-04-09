@@ -18,19 +18,50 @@ module Dama
           "mswin" => "dll",
         }.freeze
 
-        # Packaged games set DAMA_NATIVE_LIB to point at their bundled
-        # shared library. Development mode falls back to the Cargo build output.
-        LIBRARY_PATH_SOURCES = {
-          true => -> { ENV.fetch("DAMA_NATIVE_LIB") },
-          false => lambda {
-            platform_key = LIBRARY_EXTENSIONS.keys.detect { |k| RUBY_PLATFORM.include?(k) }
-            extension = LIBRARY_EXTENSIONS.fetch(platform_key)
-            File.expand_path("../../../../ext/dama_native/target/release/libdama_native.#{extension}", __dir__)
-          },
+        # Rust omits the "lib" prefix on Windows cdylibs (dama_native.dll
+        # instead of libdama_native.dll), so we need platform-aware names.
+        LIBRARY_PREFIXES = {
+          "darwin" => "lib",
+          "linux" => "lib",
+          "mingw" => "",
+          "mswin" => "",
         }.freeze
 
+        def self.library_filename
+          platform_key = LIBRARY_EXTENSIONS.keys.detect { |k| RUBY_PLATFORM.include?(k) }
+          prefix = LIBRARY_PREFIXES.fetch(platform_key)
+          extension = LIBRARY_EXTENSIONS.fetch(platform_key)
+          "#{prefix}dama_native.#{extension}"
+        end
+
+        # Library resolution order:
+        # 1. DAMA_NATIVE_LIB env var — packaged games set this to their bundled copy
+        # 2. lib/dama/native/ — pre-compiled platform gems and source gem extconf.rb
+        #    install the shared library here
+        # 3. ext/dama_native/target/release/ — local development with cargo build
+        LIBRARY_PATH_RESOLVERS = [
+          lambda {
+            path = ENV.fetch("DAMA_NATIVE_LIB", nil)
+            path if path && File.exist?(path)
+          },
+          lambda {
+            path = File.expand_path("../../native/#{library_filename}", __dir__)
+            path if File.exist?(path)
+          },
+          lambda {
+            path = File.expand_path("../../../../ext/dama_native/target/release/#{library_filename}", __dir__)
+            path if File.exist?(path)
+          },
+        ].freeze
+
         def self.library_path
-          LIBRARY_PATH_SOURCES.fetch(ENV.key?("DAMA_NATIVE_LIB")).call
+          LIBRARY_PATH_RESOLVERS.each do |resolver|
+            path = resolver.call
+            return path if path
+          end
+
+          raise "dama native library not found. Run `cargo build --release` in ext/dama_native/ " \
+                "or install a platform-specific gem."
         end
 
         ffi_lib library_path

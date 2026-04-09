@@ -10,6 +10,11 @@ group :development, :test do
   gem "rspec", "~> 3.13"
   gem "rubocop", "~> 1.75", require: false
   gem "rubocop-rspec", "~> 3.6", require: false
-  gem "ruby_wasm", "~> 2.8"
   gem "simplecov", "~> 0.22", require: false
+
+  # Optional runtime dependencies needed for release packaging and web builds.
+  # These are not required by the core gem, only by `dama release` and `dama web`.
+  gem "ruby-macho", "~> 5.0"
+  gem "rubyzip", "~> 2.4"
+  gem "webrick", "~> 1.9"
 end

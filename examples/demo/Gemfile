@@ -3,3 +3,7 @@ source "https://rubygems.org"
 # Point to the local dama gem (parent directory).
 # When published, this becomes: gem "dama", "~> 0.1"
 gem "dama", path: "../.."
+
+# Optional dependencies required by `dama release`
+gem "ruby-macho", "~> 5.0"
+gem "rubyzip", "~> 2.4"

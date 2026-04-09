@@ -1,5 +1,11 @@
 # Rust build artifacts
 ext/dama_native/target/
+ext/dama_native/Makefile
+
+# Compiled native libraries (built by extconf.rb or platform gem packaging)
+lib/dama/native/*.dylib
+lib/dama/native/*.so
+lib/dama/native/*.dll
 
 # Ruby
 coverage/

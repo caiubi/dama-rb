@@ -19,7 +19,12 @@ module Dama
     }.freeze
 
     def self.build_and_serve(project_root:, port: 8080)
-      require "webrick"
+      begin
+        require "webrick"
+      rescue LoadError
+        raise LoadError,
+              "webrick gem is required for web development server. Install it with: gem install webrick"
+      end
       builder = new(project_root:)
       builder.build
       builder.serve(port:)

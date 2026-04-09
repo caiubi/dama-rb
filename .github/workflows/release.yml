@@ -1,0 +1,124 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  build-native:
+    name: Build ${{ matrix.platform }} gem
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-14
+            platform: arm64-darwin
+          - runner: macos-13
+            platform: x86_64-darwin
+          - runner: ubuntu-latest
+            platform: x86_64-linux
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4"
+          bundler-cache: true
+
+      - name: Install system libraries
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libasound2-dev
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ext/dama_native/target
+            ~/.cargo/registry
+          key: rust-release-${{ matrix.platform }}-${{ hashFiles('ext/dama_native/Cargo.lock') }}
+
+      - name: Build platform gem
+        run: ruby script/build_platform_gem.rb ${{ matrix.platform }}
+
+      - name: Smoke test
+        run: |
+          gem install --local dama-*-${{ matrix.platform }}.gem
+          ruby -e "require 'dama'; puts \"dama #{Dama::VERSION} loaded OK\""
+
+      - name: Upload gem artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gem-${{ matrix.platform }}
+          path: "*.gem"
+
+  build-source:
+    name: Build source gem
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4"
+          bundler-cache: true
+
+      - name: Build source gem
+        run: gem build dama.gemspec
+
+      - name: Upload gem artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gem-source
+          path: "*.gem"
+
+  publish:
+    name: Publish to RubyGems
+    needs: [build-source, build-native]
+    runs-on: ubuntu-latest
+    environment: rubygems
+    permissions:
+      id-token: write
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: gems
+          merge-multiple: true
+
+      - name: List gems
+        run: ls -lh gems/
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4"
+
+      # Source gem must be pushed first -- RubyGems requires the
+      # base version to exist before platform variants can be pushed.
+      - name: Publish source gem
+        env:
+          GEM_HOST_API_KEY: ${{ secrets.GEM_HOST_API_KEY }}
+        run: |
+          source_gem=$(ls gems/dama-*.gem | grep -v -- '-x86_64\|-arm64' | head -1)
+          echo "Publishing source gem: $source_gem"
+          gem push "$source_gem"
+
+      - name: Publish platform gems
+        env:
+          GEM_HOST_API_KEY: ${{ secrets.GEM_HOST_API_KEY }}
+        run: |
+          for gem in gems/dama-*-*.gem; do
+            echo "Publishing: $gem"
+            gem push "$gem"
+          done
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="${GITHUB_REF#refs/tags/}"
+          gh release create "$tag" gems/*.gem \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "$tag" \
+            --generate-notes
