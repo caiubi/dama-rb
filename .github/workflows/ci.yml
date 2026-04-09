@@ -3,6 +3,7 @@ name: CI
 on:
   push:
     branches: [main]
+    tags: ['v*']
   pull_request:
     branches: [main]
 
@@ -84,6 +85,7 @@ jobs:
 
   release-examples:
     name: Release ${{ matrix.example }} (${{ matrix.os }})
+    if: github.event_name == 'push'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
