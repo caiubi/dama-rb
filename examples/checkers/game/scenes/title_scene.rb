@@ -48,16 +48,16 @@ end
 class TitleLabelNode < Dama::Node
   draw do
     # Title text with subtle shadow
-    text("dama-rb", 249.0, 169.0, size: 64.0, r: 0.0, g: 0.0, b: 0.0, a: 0.4)
-    text("dama-rb", 247.0, 167.0, size: 64.0, color: Dama::Colors::RED)
+    text("dama-rb", 275.0, 169.0, size: 64.0, r: 0.0, g: 0.0, b: 0.0, a: 0.4)
+    text("dama-rb", 273.0, 167.0, size: 64.0, color: Dama::Colors::RED)
 
-    text("Checkers", 277.0, 259.0, size: 48.0, r: 0.0, g: 0.0, b: 0.0, a: 0.4)
-    text("Checkers", 275.0, 257.0, size: 48.0, color: Dama::Colors::CREAM)
+    text("Checkers", 300.0, 259.0, size: 48.0, r: 0.0, g: 0.0, b: 0.0, a: 0.4)
+    text("Checkers", 298.0, 257.0, size: 48.0, color: Dama::Colors::CREAM)
 
     # Decorative divider line
     rect(300.0, 320.0, 200.0, 2.0, color: Dama::Colors::DARK_BROWN)
 
-    text("Click anywhere to start", 248.0, 360.0, size: 22.0, color: Dama::Colors::LIGHT_TAN)
+    text("Click anywhere to start", 282.0, 360.0, size: 22.0, color: Dama::Colors::LIGHT_TAN)
   end
 end
 
