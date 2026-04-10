@@ -100,19 +100,24 @@
     });
     // Pointer events unify mouse, touch, and pen input into a single API,
     // enabling both desktop and mobile interaction without separate handlers.
-    canvas.addEventListener("pointermove", e => {
+    function updatePointerPosition(e) {
       const r = canvas.getBoundingClientRect();
       renderer.dama_input_set_mouse(e.clientX - r.left, e.clientY - r.top);
-    });
+    }
+    canvas.addEventListener("pointermove", updatePointerPosition);
     // Track mouse button state in JS for Ruby to read without re-entering Rust wasm.
+    // On touch devices a fast tap can fire pointerdown+pointerup between frames,
+    // so we defer the release until the next dama_input_begin_frame has consumed it.
     window.damaMouseButtons = {};
+    window.damaMousePendingUp = {};
     canvas.addEventListener("pointerdown", e => {
+      updatePointerPosition(e);
       renderer.dama_input_set_mouse_button(e.button, true);
       window.damaMouseButtons[e.button] = true;
+      window.damaMousePendingUp[e.button] = false;
     });
     canvas.addEventListener("pointerup", e => {
-      renderer.dama_input_set_mouse_button(e.button, false);
-      window.damaMouseButtons[e.button] = false;
+      window.damaMousePendingUp[e.button] = true;
     });
 
     // Timing state for Ruby to read.
@@ -155,6 +160,17 @@
         loading.textContent = "Error: " + e.message;
         loading.style.display = "block";
         return;
+      }
+
+      // Flush deferred pointer releases after the frame consumed the pressed state.
+      // This ensures a fast tap (pointerdown+pointerup between frames) is visible
+      // to the Ruby tick for at least one frame before being cleared.
+      for (const btn in window.damaMousePendingUp) {
+        if (window.damaMousePendingUp[btn]) {
+          renderer.dama_input_set_mouse_button(Number(btn), false);
+          window.damaMouseButtons[btn] = false;
+          window.damaMousePendingUp[btn] = false;
+        }
       }
 
       requestAnimationFrame(gameLoop);
