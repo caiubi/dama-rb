@@ -31,14 +31,14 @@ class GameOverTextNode < Dama::Node
 
   draw do
     # Shadow
-    text(winner_text, 202.0, 282.0, size: 52.0, r: 0.0, g: 0.0, b: 0.0, a: 0.5)
+    text(winner_text, 264.0, 282.0, size: 52.0, r: 0.0, g: 0.0, b: 0.0, a: 0.5)
     # Main text
-    text(winner_text, 200.0, 280.0, size: 52.0, color: Dama::Colors::GOLD)
+    text(winner_text, 262.0, 280.0, size: 52.0, color: Dama::Colors::GOLD)
 
     # Divider
     rect(300.0, 350.0, 200.0, 2.0, color: Dama::Colors::DARK_BROWN)
 
-    text("Click to play again", 268.0, 375.0, size: 22.0, color: Dama::Colors::LIGHT_TAN)
+    text("Click to play again", 307.0, 375.0, size: 22.0, color: Dama::Colors::LIGHT_TAN)
   end
 end
 
