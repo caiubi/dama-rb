@@ -5,7 +5,7 @@
   <title>dama-rb: Web Demo (WebGPU)</title>
   <style>
     body { margin: 0; background: #111; display: flex; justify-content: center; align-items: center; height: 100vh; }
-    canvas { border: 1px solid #333; }
+    canvas { border: 1px solid #333; touch-action: none; }
     #loading { color: #fff; font-family: sans-serif; font-size: 24px; position: absolute; }
   </style>
 </head>
@@ -98,17 +98,19 @@
     document.addEventListener("keyup", e => {
       const c = KEY_MAP[e.code]; if (c !== undefined) renderer.dama_input_set_key(c, false);
     });
-    canvas.addEventListener("mousemove", e => {
+    // Pointer events unify mouse, touch, and pen input into a single API,
+    // enabling both desktop and mobile interaction without separate handlers.
+    canvas.addEventListener("pointermove", e => {
       const r = canvas.getBoundingClientRect();
       renderer.dama_input_set_mouse(e.clientX - r.left, e.clientY - r.top);
     });
     // Track mouse button state in JS for Ruby to read without re-entering Rust wasm.
     window.damaMouseButtons = {};
-    canvas.addEventListener("mousedown", e => {
+    canvas.addEventListener("pointerdown", e => {
       renderer.dama_input_set_mouse_button(e.button, true);
       window.damaMouseButtons[e.button] = true;
     });
-    canvas.addEventListener("mouseup", e => {
+    canvas.addEventListener("pointerup", e => {
       renderer.dama_input_set_mouse_button(e.button, false);
       window.damaMouseButtons[e.button] = false;
     });
