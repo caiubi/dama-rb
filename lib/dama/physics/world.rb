@@ -13,11 +13,11 @@ module Dama
         @bodies = []
       end
 
-      def add(body)
+      def add(body:)
         bodies << body
       end
 
-      def remove(body)
+      def remove(body:)
         bodies.delete(body)
       end
 
@@ -90,7 +90,6 @@ module Dama
       end
 
       def resolve_velocities(body_a, body_b, dx, dy)
-        # Separation points from a toward b. Normal for a points away (negative).
         normal_x = dx.zero? ? 0.0 : (dx / dx.abs)
         normal_y = dy.zero? ? 0.0 : (dy / dy.abs)
 
@@ -102,7 +101,6 @@ module Dama
 
       def bounce_body(body, normal_x, normal_y)
         restitution = body.restitution
-        # Reflect velocity along the collision normal.
         dot = (body.velocity_x * normal_x) + (body.velocity_y * normal_y)
         return unless dot.negative? # Only bounce if moving toward the surface.
 

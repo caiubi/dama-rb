@@ -73,7 +73,7 @@ module Dama
       "mswin" => ->(port) { `netstat -ano | findstr :#{port}`.scan(/\s(\d+)\s*$/).flatten },
     }.freeze
 
-    DEFAULT_PORT_LISTER = ->(port) { `lsof -ti:#{port} 2>/dev/null`.strip.split("\n") }
+    DEFAULT_PORT_LISTER = ->(port) { `lsof -ti:#{port} 2>/dev/null`.strip.lines(chomp: true) }
 
     # Terminate any process already listening on the target port.
     def kill_existing_server(port:)
@@ -130,8 +130,6 @@ module Dama
           run_command("rbwasm pack #{ruby_wasm} --dir #{pack_dir}::/src -o #{game_wasm}")
         end
       end
-
-      copy_ruby_wasm_js unless File.exist?(File.join(dist_dir, "ruby_wasm.js"))
     end
 
     def build_base_ruby_wasm(output_path)
@@ -146,10 +144,6 @@ module Dama
           File.join(dist_dir, "ruby_wasm.js"),
         )
       end
-    end
-
-    def copy_ruby_wasm_js
-      # Already copied during build_base_ruby_wasm.
     end
 
     def copy_static_files

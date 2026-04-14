@@ -52,13 +52,11 @@ module Dama
 
       private
 
-      # AABB vs AABB overlap check.
       def overlap_rect_rect?(other, ax, ay, bx, by)
         ax + width > bx && ax < bx + other.width &&
           ay + height > by && ay < by + other.height
       end
 
-      # Circle vs Circle overlap check.
       def overlap_circle_circle?(other, ax, ay, bx, by)
         dx = bx - ax
         dy = by - ay
@@ -67,7 +65,6 @@ module Dama
         dist_sq < max_dist * max_dist
       end
 
-      # Rect vs Circle overlap: find closest point on rect to circle center.
       def overlap_rect_circle?(other, ax, ay, bx, by)
         closest_x = bx.clamp(ax, ax + width)
         closest_y = by.clamp(ay, ay + height)
@@ -76,12 +73,10 @@ module Dama
         (dx * dx) + (dy * dy) < other.radius * other.radius
       end
 
-      # Circle vs Rect: delegate with swapped args.
       def overlap_circle_rect?(other, ax, ay, bx, by)
         other.overlap?(other: self, ax: bx, ay: by, bx: ax, by: ay)
       end
 
-      # Circle vs Circle separation: push along the line connecting centers.
       def separate_circle_circle(other, ax, ay, bx, by)
         return nil unless overlap_circle_circle?(other, ax, ay, bx, by)
 
@@ -89,7 +84,6 @@ module Dama
         dy = by - ay
         dist = Math.sqrt((dx * dx) + (dy * dy))
 
-        # If centers coincide, push along arbitrary axis.
         return { dx: radius + other.radius, dy: 0.0 } if dist < 0.0001
 
         overlap = (radius + other.radius) - dist
@@ -98,7 +92,6 @@ module Dama
         { dx: overlap * nx, dy: overlap * ny }
       end
 
-      # Rect vs Circle separation.
       def separate_rect_circle(other, ax, ay, bx, by)
         return nil unless overlap_rect_circle?(other, ax, ay, bx, by)
 
@@ -116,7 +109,6 @@ module Dama
         { dx: overlap * nx, dy: overlap * ny }
       end
 
-      # Circle vs Rect: delegate and flip.
       def separate_circle_rect(other, ax, ay, bx, by)
         result = other.separation(other: self, ax: bx, ay: by, bx: ax, by: ay)
         return nil unless result
@@ -124,16 +116,12 @@ module Dama
         { dx: -result.fetch(:dx), dy: -result.fetch(:dy) }
       end
 
-      # Minimum translation vector to push b out of a (rect vs rect).
-      # Returns { dx:, dy: } or nil if no overlap.
       def separate_rect_rect(other, ax, ay, bx, by) # rubocop:disable Metrics/AbcSize
         return nil unless overlap_rect_rect?(other, ax, ay, bx, by)
 
-        # Calculate overlap on each axis.
         overlap_x = (ax + width) < (bx + other.width) ? (ax + width - bx) : (bx + other.width - ax)
         overlap_y = (ay + height) < (by + other.height) ? (ay + height - by) : (by + other.height - ay)
 
-        # Determine separation direction (sign).
         center_ax = ax + (width / 2.0)
         center_bx = bx + (other.width / 2.0)
         center_ay = ay + (height / 2.0)
@@ -142,7 +130,6 @@ module Dama
         sign_x = center_bx >= center_ax ? 1.0 : -1.0
         sign_y = center_by >= center_ay ? 1.0 : -1.0
 
-        # Separate along the axis of least penetration.
         return { dx: overlap_x * sign_x, dy: 0.0 } if overlap_x.abs <= overlap_y.abs
 
         { dx: 0.0, dy: overlap_y * sign_y }

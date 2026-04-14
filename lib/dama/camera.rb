@@ -17,17 +17,17 @@ module Dama
     end
 
     def move_to(x:, y:)
-      @x = x.to_f
-      @y = y.to_f
+      self.x = x.to_f
+      self.y = y.to_f
     end
 
     def move_by(dx:, dy:)
-      @x += dx.to_f
-      @y += dy.to_f
+      self.x = self.x + dx.to_f
+      self.y = self.y + dy.to_f
     end
 
     def zoom_to(level:)
-      @zoom = level.to_f.clamp(MIN_ZOOM, MAX_ZOOM)
+      self.zoom = level.to_f.clamp(MIN_ZOOM, MAX_ZOOM)
     end
 
     # Converts world coordinates to screen pixel coordinates.
@@ -61,8 +61,12 @@ module Dama
     # Centers the camera on a target object (must respond to #x and #y).
     # Use lerp < 1.0 for smooth following.
     def follow(target:, lerp: 1.0)
-      @x += (target.x - x) * lerp
-      @y += (target.y - y) * lerp
+      self.x = self.x + ((target.x - x) * lerp)
+      self.y = self.y + ((target.y - y) * lerp)
     end
+
+    private
+
+    attr_writer :x, :y, :zoom
   end
 end

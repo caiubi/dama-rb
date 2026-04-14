@@ -21,7 +21,7 @@ module Dama
       sounds[name] = handle
     end
 
-    def play(name, volume: 1.0, loop: false)
+    def play(name:, volume: 1.0, loop: false)
       handle = sounds.fetch(name)
       backend.play_sound(handle:, volume:, loop:)
     end
@@ -30,7 +30,7 @@ module Dama
       backend.stop_all_sounds
     end
 
-    def unload(name)
+    def unload(name:)
       handle = sounds.delete(name)
       backend.unload_sound(handle:) if handle
     end

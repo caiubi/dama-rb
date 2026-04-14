@@ -31,7 +31,6 @@ module Dama
       CAMEL_LOWER = /(?<lower>[a-z\d])(?<upper>[A-Z])/
 
       def derive_key(klass:)
-        # Extract the class basename (last segment after ::).
         basename = klass.name&.match(/(?<basename>[^:]+)\z/)&.[](:basename) || klass.to_s
         basename
           .gsub(CAMEL_BOUNDARY, '\k<upper>_\k<next_upper>')

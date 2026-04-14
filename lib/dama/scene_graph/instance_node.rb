@@ -12,8 +12,8 @@ module Dama
       end
 
       # Polymorphic traversal: yields self to the block.
-      def traverse(&block)
-        block.call(self)
+      def traverse
+        yield(self)
       end
 
       def method_missing(method_name, ...)

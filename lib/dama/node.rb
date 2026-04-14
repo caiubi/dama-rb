@@ -102,7 +102,7 @@ module Dama
     # Load all declared shaders via the backend.
     def load_shaders(backend:)
       self.class.shader_declarations.each do |name, declaration|
-        source = declaration[:source] || File.read(declaration.fetch(:path))
+        source = declaration.fetch(:source) || File.read(declaration.fetch(:path))
         shader_handles[name] = backend.load_shader(source:)
       end
     end
@@ -122,7 +122,6 @@ module Dama
     def initialize_components(values)
       self.class.component_slots.each do |name, slot|
         # Allow constructor values to override component defaults.
-        # e.g., PieceNode.new(x: 100.0) overrides Transform's default x.
         component_attrs = slot.component_class.attribute_set.map(&:name)
         overrides = values.slice(*component_attrs)
         components[name] = slot.build(**overrides)

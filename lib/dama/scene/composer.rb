@@ -36,7 +36,8 @@ module Dama
       end
 
       def physics(gravity: [0.0, 0.0])
-        scene.enable_physics(gravity_x: gravity[0], gravity_y: gravity[1])
+        gravity_x, gravity_y = gravity
+        scene.enable_physics(gravity_x:, gravity_y:)
       end
 
       def group(name, &)

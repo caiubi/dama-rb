@@ -173,7 +173,7 @@ RSpec.describe "Physics integration" do
       end.new
       collider = Dama::Physics::Collider.rect(width: 40.0, height: 40.0)
       unnamed_body = Dama::Physics::Body.new(type: :static, collider:, node: unnamed_node)
-      scene.send(:physics_world).add(unnamed_body)
+      scene.send(:physics_world).add(body: unnamed_body)
 
       # Should not crash — dispatch_collision returns early for unnamed bodies.
       expect { scene.perform_update(delta_time: 0.016, input: nil) }.not_to raise_error

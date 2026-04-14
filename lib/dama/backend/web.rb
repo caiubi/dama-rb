@@ -9,6 +9,7 @@ module Dama
     class Web < Base
       def initialize
         @frame_count = 0
+        @next_sound_handle = 0
         @command_buffer = CommandBuffer.new
       end
 
@@ -31,7 +32,7 @@ module Dama
       def end_frame
         flush_commands
         js_renderer.call(:dama_end_frame)
-        @frame_count += 1
+        self.frame_count = frame_count + 1
       end
 
       def delta_time
@@ -114,18 +115,19 @@ module Dama
       end
 
       def load_sound(path:)
-        @next_sound_handle ||= 0
-        @next_sound_handle += 1
+        self.next_sound_handle = next_sound_handle + 1
 
         data = File.binread(path)
         b64 = [data].pack("m0")
         ::JS.eval("window.damaSounds = window.damaSounds || {}; " \
-                  "window.damaSounds[#{@next_sound_handle}] = 'data:audio/wav;base64,#{b64}'")
-        @next_sound_handle
+                  "window.damaSounds[#{next_sound_handle}] = 'data:audio/wav;base64,#{b64}'")
+        next_sound_handle
       end
 
+      LOOP_JS = { true => "a.loop = true;", false => "" }.freeze
+
       def play_sound(handle:, volume: 1.0, loop: false)
-        loop_js = loop ? "a.loop = true;" : ""
+        loop_js = LOOP_JS.fetch(loop)
         ::JS.eval("(() => { const a = new Audio(window.damaSounds[#{handle}]); " \
                   "a.volume = #{volume}; #{loop_js} a.play().catch(() => {}); })()")
       end
@@ -160,7 +162,8 @@ module Dama
 
       private
 
-      attr_reader :command_buffer
+      attr_reader :command_buffer, :next_sound_handle
+      attr_writer :frame_count, :next_sound_handle
 
       def js_renderer
         ::JS.global[:damaWgpu]

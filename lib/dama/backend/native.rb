@@ -58,27 +58,33 @@ module Dama
 
       def draw_triangle(x1:, y1:, x2:, y2:, x3:, y3:, color: Dama::Colors::WHITE,
                         r: color.r, g: color.g, b: color.b, a: color.a, filled: true)
-        vertex_batch.push(Geometry::Triangle.vertices(x1:, y1:, x2:, y2:, x3:, y3:, r:, g:, b:, a:))
+        vertex_batch.push(vertex_floats: Geometry::Triangle.vertices(x1:, y1:, x2:, y2:, x3:, y3:, r:, g:, b:, a:))
       end
 
       def draw_rect(x:, y:, w:, h:, color: Dama::Colors::WHITE,
                     r: color.r, g: color.g, b: color.b, a: color.a, filled: true)
-        vertex_batch.push(Geometry::Rect.vertices(x:, y:, w:, h:, r:, g:, b:, a:))
+        vertex_batch.push(vertex_floats: Geometry::Rect.vertices(x:, y:, w:, h:, r:, g:, b:, a:))
       end
 
       def draw_circle(cx:, cy:, radius:, color: Dama::Colors::WHITE,
                       r: color.r, g: color.g, b: color.b, a: color.a, filled: true, segments: 32)
-        vertex_batch.push(Geometry::Circle.vertices(cx:, cy:, radius:, r:, g:, b:, a:, segments:))
+        vertex_batch.push(vertex_floats: Geometry::Circle.vertices(cx:, cy:, radius:, r:, g:, b:, a:, segments:))
       end
+
+      TEXT_RENDERERS = {
+        true => ->(bindings, text, x, y, size, r, g, b, a, font) {
+          bindings.dama_render_text_with_font(text, x, y, size, r, g, b, a, font)
+        },
+        false => ->(bindings, text, x, y, size, r, g, b, a, _font) {
+          bindings.dama_render_text(text, x, y, size, r, g, b, a)
+        },
+      }.freeze
 
       def draw_text(text:, x:, y:, size:, color: Dama::Colors::WHITE,
                     r: color.r, g: color.g, b: color.b, a: color.a, font: nil)
         vertex_batch.flush(bindings:)
-        result = if font
-                   bindings.dama_render_text_with_font(text, x, y, size, r, g, b, a, font)
-                 else
-                   bindings.dama_render_text(text, x, y, size, r, g, b, a)
-                 end
+        renderer = TEXT_RENDERERS.fetch(!font.nil?)
+        result = renderer.call(bindings, text, x, y, size, r, g, b, a, font)
         check_result(result:)
       end
 
@@ -91,7 +97,7 @@ module Dama
         # Flush any untextured vertices, switch texture, push sprite, flush, reset.
         vertex_batch.flush(bindings:)
         check_result(result: bindings.dama_render_set_texture(texture_handle))
-        vertex_batch.push(Geometry::Sprite.vertices(x:, y:, w:, h:, r:, g:, b:, a:))
+        vertex_batch.push(vertex_floats: Geometry::Sprite.vertices(x:, y:, w:, h:, r:, g:, b:, a:))
         vertex_batch.flush(bindings:)
         check_result(result: bindings.dama_render_set_texture(0))
       end
@@ -148,8 +154,10 @@ module Dama
         handle
       end
 
+      BOOLEAN_TO_INT = { true => 1, false => 0 }.freeze
+
       def play_sound(handle:, volume: 1.0, loop: false)
-        looping = loop ? 1 : 0
+        looping = BOOLEAN_TO_INT.fetch(loop)
         check_result(result: bindings.dama_audio_play_sound(handle, volume, looping))
       end
 

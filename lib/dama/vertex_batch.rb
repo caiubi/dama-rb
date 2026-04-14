@@ -10,7 +10,7 @@ module Dama
       @buffer = []
     end
 
-    def push(vertex_floats)
+    def push(vertex_floats:)
       buffer.concat(vertex_floats)
     end
 

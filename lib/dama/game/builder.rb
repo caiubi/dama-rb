@@ -11,12 +11,8 @@ module Dama
       end
 
       def settings(resolution: [800, 600], title: "Dama Game", headless: false)
-        @configuration = Configuration.new(
-          width: resolution[0],
-          height: resolution[1],
-          title:,
-          headless:,
-        )
+        width, height = resolution
+        @configuration = Configuration.new(width:, height:, title:, headless:)
       end
 
       def start_scene(scene_class)

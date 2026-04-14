@@ -60,7 +60,7 @@ module Dama
 
     # Play a sound declared via the `sound` class DSL.
     def play(name)
-      audio&.play(name)
+      audio&.play(name:)
     end
 
     def enable_camera(viewport_width:, viewport_height:, **)
@@ -89,22 +89,20 @@ module Dama
       scene_switcher&.call(scene_class)
     end
 
+    NOOP_BLOCK = proc {}.freeze
+
     def perform_compose
       load_sounds
-      return unless self.class.compose_block
-
       composer = Scene::Composer.new(scene_graph:, registry:, scene: self)
-      composer.instance_eval(&self.class.compose_block)
+      composer.instance_eval(&(self.class.compose_block || NOOP_BLOCK))
     end
 
     def perform_enter
-      return unless self.class.enter_block
-
-      instance_eval(&self.class.enter_block)
+      instance_eval(&(self.class.enter_block || NOOP_BLOCK))
     end
 
     def perform_update(delta_time:, input:)
-      instance_exec(delta_time, input, &self.class.update_block) if self.class.update_block
+      instance_exec(delta_time, input, &(self.class.update_block || NOOP_BLOCK))
       physics_world&.step(delta_time:)
     end
 
@@ -163,7 +161,7 @@ module Dama
       node = instance_node.node
       node.unload_textures(asset_cache:) if asset_cache
       node.unload_shaders(backend:) if backend
-      physics_world&.remove(node.physics) if node.physics
+      physics_world&.remove(body: node.physics) if node.physics
 
       scene_graph.remove(id: name)
     end
@@ -215,14 +213,14 @@ module Dama
         restitution: opts.fetch(:restitution, 0.0),
       )
       node.physics = body
-      physics_world.add(body)
+      physics_world.add(body:)
     end
 
     # Route a collision event to the appropriate named handler.
     def dispatch_collision(collision)
-      # Find node names for the two bodies.
-      name_a = named_nodes.key(named_nodes.values.find { |n| n.node == collision.body_a.node })
-      name_b = named_nodes.key(named_nodes.values.find { |n| n.node == collision.body_b.node })
+      node_to_name = named_nodes.each_with_object({}) { |(name, in_node), map| map[in_node.node] = name }
+      name_a = node_to_name[collision.body_a.node]
+      name_b = node_to_name[collision.body_b.node]
       return unless name_a && name_b
 
       key = [name_a, name_b].sort

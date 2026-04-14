@@ -27,12 +27,12 @@ RSpec.describe Dama::Audio do
         write_minimal_wav(path)
 
         audio.load(name: :test, path:)
-        expect { audio.play(:test) }.not_to raise_error
+        expect { audio.play(name: :test) }.not_to raise_error
       end
     end
 
     it "raises KeyError for unknown sound" do
-      expect { audio.play(:nonexistent) }.to raise_error(KeyError)
+      expect { audio.play(name: :nonexistent) }.to raise_error(KeyError)
     end
 
     it "plays a looping sound without error" do
@@ -41,7 +41,7 @@ RSpec.describe Dama::Audio do
         write_minimal_wav(path)
 
         audio.load(name: :loop_test, path:)
-        expect { audio.play(:loop_test, loop: true) }.not_to raise_error
+        expect { audio.play(name: :loop_test, loop: true) }.not_to raise_error
         audio.stop_all
       end
     end
@@ -67,12 +67,12 @@ RSpec.describe Dama::Audio do
         write_minimal_wav(path)
 
         audio.load(name: :test, path:)
-        expect { audio.unload(:test) }.not_to raise_error
+        expect { audio.unload(name: :test) }.not_to raise_error
       end
     end
 
     it "does nothing for unknown sound names" do
-      expect { audio.unload(:nonexistent) }.not_to raise_error
+      expect { audio.unload(name: :nonexistent) }.not_to raise_error
     end
   end
 

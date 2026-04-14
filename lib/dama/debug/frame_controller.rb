@@ -11,14 +11,16 @@ module Dama
         unlimited: ->(_current_frame, _frame_limit) { false },
       }.freeze
 
+      STRATEGY_KEYS = { true => :unlimited, false => :limited }.freeze
+
       def initialize(frame_limit: 0)
         @frame_limit = frame_limit
         @current_frame = 0
-        @strategy_key = frame_limit.zero? ? :unlimited : :limited
+        @strategy_key = STRATEGY_KEYS.fetch(frame_limit.zero?)
       end
 
       def tick
-        @current_frame += 1
+        self.current_frame = current_frame + 1
       end
 
       def frame_limit_reached?
@@ -30,6 +32,7 @@ module Dama
       private
 
       attr_reader :frame_limit, :strategy_key
+      attr_writer :current_frame
     end
   end
 end

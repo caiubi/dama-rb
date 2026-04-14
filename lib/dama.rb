@@ -26,15 +26,15 @@ module Dama
       require config_file
 
       web_requested = ARGV[0] == "web"
-      BOOT_ACTIONS.fetch(web_requested).call(root)
+      BOOT_ACTIONS.fetch(web_requested).call(root:)
     end
 
     BOOT_ACTIONS = {
-      true => lambda { |root|
+      true => lambda { |root:|
         puts "Building and serving web version..."
         WebBuilder.build_and_serve(project_root: root, port: 8080)
       },
-      false => ->(_root) { GAME.start },
+      false => ->(**) { GAME.start },
     }.freeze
   end
 end

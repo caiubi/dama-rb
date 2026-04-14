@@ -28,7 +28,7 @@ RSpec.describe Dama::Physics::World do
       world = described_class.new(gravity_x: 0.0, gravity_y: 500.0)
       body = make_body(type: :dynamic, x: 100.0, y: 100.0)
       body.velocity_x = 50.0
-      world.add(body)
+      world.add(body:)
 
       world.step(delta_time: 0.1)
 
@@ -42,8 +42,8 @@ RSpec.describe Dama::Physics::World do
       world = described_class.new
       body_a = make_body(type: :dynamic, x: 0.0, y: 0.0, width: 40.0, height: 40.0)
       body_b = make_body(type: :static, x: 30.0, y: 0.0, width: 40.0, height: 40.0)
-      world.add(body_a)
-      world.add(body_b)
+      world.add(body: body_a)
+      world.add(body: body_b)
 
       world.step(delta_time: 0.0)
 
@@ -56,8 +56,8 @@ RSpec.describe Dama::Physics::World do
       # Static body added first, dynamic second.
       body_static = make_body(type: :static, x: 0.0, y: 0.0, width: 40.0, height: 40.0)
       body_dynamic = make_body(type: :dynamic, x: 30.0, y: 0.0, width: 40.0, height: 40.0)
-      world.add(body_static)
-      world.add(body_dynamic)
+      world.add(body: body_static)
+      world.add(body: body_dynamic)
 
       world.step(delta_time: 0.0)
 
@@ -70,8 +70,8 @@ RSpec.describe Dama::Physics::World do
       world = described_class.new
       body_a = make_body(type: :dynamic, x: 0.0, y: 0.0)
       body_b = make_body(type: :static, x: 20.0, y: 0.0)
-      world.add(body_a)
-      world.add(body_b)
+      world.add(body: body_a)
+      world.add(body: body_b)
 
       world.step(delta_time: 0.0)
 
@@ -82,8 +82,8 @@ RSpec.describe Dama::Physics::World do
       world = described_class.new
       body_a = make_body(type: :dynamic, x: 0.0, y: 0.0, width: 40.0, height: 40.0)
       body_b = make_body(type: :dynamic, x: 30.0, y: 0.0, width: 40.0, height: 40.0)
-      world.add(body_a)
-      world.add(body_b)
+      world.add(body: body_a)
+      world.add(body: body_b)
 
       world.step(delta_time: 0.0)
 
@@ -100,8 +100,8 @@ RSpec.describe Dama::Physics::World do
       world = described_class.new(event_bus: bus)
       body_a = make_body(type: :dynamic, x: 0.0, y: 0.0, width: 40.0, height: 40.0)
       body_b = make_body(type: :static, x: 30.0, y: 0.0, width: 40.0, height: 40.0)
-      world.add(body_a)
-      world.add(body_b)
+      world.add(body: body_a)
+      world.add(body: body_b)
 
       world.step(delta_time: 0.0)
 
@@ -115,8 +115,8 @@ RSpec.describe Dama::Physics::World do
       body_a = make_body(type: :dynamic, x: 0.0, y: 0.0, width: 40.0, height: 40.0, restitution: 1.0)
       body_a.velocity_x = 100.0
       body_b = make_body(type: :static, x: 30.0, y: 0.0, width: 40.0, height: 40.0)
-      world.add(body_a)
-      world.add(body_b)
+      world.add(body: body_a)
+      world.add(body: body_b)
 
       world.step(delta_time: 0.0)
 
@@ -130,8 +130,8 @@ RSpec.describe Dama::Physics::World do
     body_a = make_body(type: :dynamic, x: 0.0, y: 0.0, width: 40.0, height: 40.0, restitution: 1.0)
     body_a.velocity_y = 100.0
     body_b = make_body(type: :static, x: 0.0, y: 35.0, width: 40.0, height: 40.0)
-    world.add(body_a)
-    world.add(body_b)
+    world.add(body: body_a)
+    world.add(body: body_b)
 
     world.step(delta_time: 0.0)
 
@@ -142,8 +142,8 @@ RSpec.describe Dama::Physics::World do
     world = described_class.new
     a = make_body(type: :static, x: 0.0, y: 0.0, width: 40.0, height: 40.0)
     b = make_body(type: :static, x: 20.0, y: 0.0, width: 40.0, height: 40.0)
-    world.add(a)
-    world.add(b)
+    world.add(body: a)
+    world.add(body: b)
 
     # Should not crash or resolve anything — both are static.
     expect { world.step(delta_time: 0.0) }.not_to raise_error
@@ -155,8 +155,8 @@ RSpec.describe Dama::Physics::World do
     world = described_class.new
     a = make_body(type: :kinematic, x: 0.0, y: 0.0, width: 40.0, height: 40.0)
     b = make_body(type: :dynamic, x: 30.0, y: 0.0, width: 40.0, height: 40.0)
-    world.add(a)
-    world.add(b)
+    world.add(body: a)
+    world.add(body: b)
 
     # Kinematic vs dynamic has no resolver — no crash expected.
     expect { world.step(delta_time: 0.0) }.not_to raise_error
@@ -168,8 +168,8 @@ RSpec.describe Dama::Physics::World do
     b = make_body(type: :static, x: 30.0, y: 0.0, width: 40.0, height: 40.0)
     # a has zero velocity — dot product = 0, should not bounce.
     a.velocity_x = 0.0
-    world.add(a)
-    world.add(b)
+    world.add(body: a)
+    world.add(body: b)
 
     world.step(delta_time: 0.0)
     expect(a.velocity_x).to eq(0.0)
@@ -179,8 +179,8 @@ RSpec.describe Dama::Physics::World do
     it "removes a body from the simulation" do
       world = described_class.new
       body = make_body(type: :dynamic)
-      world.add(body)
-      world.remove(body)
+      world.add(body:)
+      world.remove(body:)
 
       # Should not crash with zero bodies.
       expect { world.step(delta_time: 0.1) }.not_to raise_error

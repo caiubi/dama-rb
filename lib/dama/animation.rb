@@ -17,13 +17,13 @@ module Dama
     def update(delta_time:)
       return if completed
 
-      @elapsed += delta_time
+      self.elapsed = elapsed + delta_time
       frame_duration = 1.0 / fps
       frames_advanced = (elapsed / frame_duration).to_i
 
       return unless frames_advanced > frame_position
 
-      @frame_position = frames_advanced
+      self.frame_position = frames_advanced
       handle_frame_advancement
     end
 
@@ -32,9 +32,9 @@ module Dama
     end
 
     def reset
-      @elapsed = 0.0
-      @frame_position = 0
-      @completed = false
+      self.elapsed = 0.0
+      self.frame_position = 0
+      self.completed = false
     end
 
     def current_frame
@@ -44,6 +44,7 @@ module Dama
     private
 
     attr_reader :frame_indices, :looping, :on_complete, :elapsed, :frame_position, :completed
+    attr_writer :elapsed, :frame_position, :completed
 
     def handle_frame_advancement
       return if frame_position < frame_indices.size
@@ -51,16 +52,23 @@ module Dama
       finish_animation
     end
 
-    def finish_animation
-      return loop_animation if looping
+    FINISH_STRATEGIES = {
+      true => :loop_animation,
+      false => :complete_animation,
+    }.freeze
 
-      @frame_position = frame_indices.size - 1
-      @completed = true
+    def finish_animation
+      send(FINISH_STRATEGIES.fetch(looping))
+    end
+
+    def complete_animation
+      self.frame_position = frame_indices.size - 1
+      self.completed = true
       on_complete&.call
     end
 
     def loop_animation
-      @frame_position = frame_position % frame_indices.size
+      self.frame_position = frame_position % frame_indices.size
     end
   end
 end

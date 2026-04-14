@@ -118,7 +118,6 @@ module Dama
           File.join(trans_dir, "transdb.so"),
         ].select { |f| File.exist?(f) }
 
-        # Remove everything except the essential encoding files
         non_essential_entries(enc_dir:, essential_files:).each { |e| FileUtils.rm_rf(e) }
         non_essential_entries(enc_dir: trans_dir, essential_files: essential_trans).each { |e| FileUtils.rm_rf(e) }
       end

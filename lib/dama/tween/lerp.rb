@@ -15,7 +15,7 @@ module Dama
       end
 
       def update(delta_time:)
-        @elapsed += delta_time
+        self.elapsed = elapsed + delta_time
         linear_progress = [elapsed / duration, 1.0].min
         eased_progress = easing_fn.call(linear_progress)
         value = from + ((to - from) * eased_progress)
@@ -30,6 +30,7 @@ module Dama
       private
 
       attr_reader :target, :attribute, :from, :to, :duration, :elapsed, :easing_fn, :on_complete
+      attr_writer :elapsed
     end
   end
 end
