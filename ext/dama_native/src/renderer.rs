@@ -232,7 +232,11 @@ impl Renderer {
         }
 
         self.queue.submit(std::iter::once(encoder.finish()));
-        let _ = self.device.poll(wgpu::PollType::wait_indefinitely());
+        // On native, block until the GPU finishes the frame. On web, the
+        // browser compositor manages submission timing — polling with
+        // wait_indefinitely can stall or panic on wasm32.
+        #[cfg(not(target_arch = "wasm32"))]
+        { let _ = self.device.poll(wgpu::PollType::wait_indefinitely()); }
 
         if let Some(ref mut tr) = self.text_renderer {
             tr.clear();

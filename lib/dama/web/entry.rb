@@ -43,10 +43,11 @@ $scene.perform_enter
 $input = Dama::Input.new(backend: $backend)
 $pending_scene = nil
 
-# Expose game state and error tracking for integration tests.
-JS.eval("window.__damaErrors = []")
+# Expose game state for integration tests and the JS error overlay.
+# Error tracking (window.__damaErrors, error/unhandledrejection listeners)
+# is initialized in index.html before Ruby loads, so we only set up
+# the state object that the JS overlay reads for context.
 JS.eval("window.__damaState = { frameCount: 0, sceneName: '' }")
-JS.eval("window.addEventListener('error', e => window.__damaErrors.push(e.message))")
 
 $dama_tick = lambda {
   dt = $backend.delta_time

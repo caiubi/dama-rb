@@ -266,6 +266,14 @@ mod web_exports {
     use super::*;
     use wasm_bindgen::prelude::*;
 
+    /// Log an error to the browser console so it is visible in DevTools
+    /// and can be correlated with the JS-side error overlay.
+    fn log_error(context: &str, err: &str) {
+        web_sys::console::error_1(
+            &format!("[dama/rust] {context}: {err}").into(),
+        );
+    }
+
     #[wasm_bindgen]
     pub fn dama_init(canvas_id: &str, width: u32, height: u32) {
         Engine::init_web(canvas_id, width, height).unwrap();
@@ -280,10 +288,18 @@ mod web_exports {
     }
 
     #[wasm_bindgen]
-    pub fn dama_begin_frame() { let _ = Engine::with(|e| e.begin_frame()); }
+    pub fn dama_begin_frame() {
+        if let Err(e) = Engine::with(|e| e.begin_frame()) {
+            log_error("begin_frame", &e);
+        }
+    }
 
     #[wasm_bindgen]
-    pub fn dama_end_frame() { let _ = Engine::with(|e| e.end_frame()); }
+    pub fn dama_end_frame() {
+        if let Err(e) = Engine::with(|e| e.end_frame()) {
+            log_error("end_frame", &e);
+        }
+    }
 
     #[wasm_bindgen]
     pub fn dama_delta_time() -> f64 { Engine::with(|e| Ok(e.delta_time())).unwrap_or(0.0) }
@@ -292,7 +308,11 @@ mod web_exports {
     pub fn dama_frame_count() -> u64 { Engine::with(|e| Ok(e.frame_count())).unwrap_or(0) }
 
     #[wasm_bindgen]
-    pub fn dama_clear(r: f32, g: f32, b: f32, a: f32) { let _ = Engine::with(|e| e.renderer().clear(r, g, b, a)); }
+    pub fn dama_clear(r: f32, g: f32, b: f32, a: f32) {
+        if let Err(e) = Engine::with(|e| e.renderer().clear(r, g, b, a)) {
+            log_error("clear", &e);
+        }
+    }
 
     #[wasm_bindgen]
     pub fn dama_render_vertices(vertex_data: &[f32], vertex_count: u32) {
