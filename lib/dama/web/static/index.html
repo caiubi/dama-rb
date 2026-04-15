@@ -9,14 +9,79 @@
     #loading { color: #fff; font-family: sans-serif; font-size: 24px; position: absolute; }
     #repo-link { color: #666; font-family: sans-serif; font-size: 13px; margin-top: 10px; text-decoration: none; }
     #repo-link:hover { color: #6af; }
+    #dama-error {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.92); z-index: 1000;
+      font-family: sans-serif; color: #fff;
+      padding: 32px; box-sizing: border-box;
+      overflow-y: auto;
+    }
+    #dama-error h2 { color: #f44; margin: 0 0 12px; font-size: 20px; }
+    #dama-error pre {
+      background: #1a1a1a; color: #faa; padding: 16px; border-radius: 6px;
+      font-size: 13px; line-height: 1.5; white-space: pre-wrap; word-break: break-word;
+      max-height: 50vh; overflow-y: auto; margin: 0 0 16px;
+    }
+    #dama-error .context { color: #888; font-size: 12px; margin-bottom: 16px; }
+    #dama-error button {
+      background: #333; color: #fff; border: 1px solid #555; border-radius: 4px;
+      padding: 8px 20px; font-size: 14px; cursor: pointer;
+    }
+    #dama-error button:hover { background: #444; }
   </style>
 </head>
 <body>
   <div id="loading">Loading...</div>
   <canvas id="game"></canvas>
   <a id="repo-link" href="https://github.com/caiubi/dama-rb">github.com/caiubi/dama-rb</a>
+  <div id="dama-error">
+    <h2 id="dama-error-title"></h2>
+    <pre id="dama-error-detail"></pre>
+    <div id="dama-error-context" class="context"></div>
+    <button onclick="location.reload()">Reload</button>
+  </div>
 
   <script type="module">
+    // --- Error reporting ---
+    // Captures errors from all layers (JS, Ruby/wasm, Rust/wgpu) and displays
+    // them in a styled overlay with context for debugging.
+    window.__damaErrors = [];
+    let gameStopped = false;
+
+    function showError(title, detail, extra) {
+      gameStopped = true;
+      const ctx = {
+        frame: window.__damaState?.frameCount ?? "?",
+        scene: window.__damaState?.sceneName ?? "?",
+        time: new Date().toISOString(),
+        ...(extra || {}),
+      };
+      console.error("[dama] " + title, detail, ctx);
+      window.__damaErrors.push(title + ": " + detail);
+
+      const overlay = document.getElementById("dama-error");
+      document.getElementById("dama-error-title").textContent = title;
+      document.getElementById("dama-error-detail").textContent = detail;
+      document.getElementById("dama-error-context").textContent =
+        "Frame: " + ctx.frame + " | Scene: " + ctx.scene +
+        " | Source: " + (ctx.source || "unknown") + " | " + ctx.time;
+      overlay.style.display = "block";
+      document.getElementById("loading").style.display = "none";
+    }
+
+    window.addEventListener("error", e => {
+      window.__damaErrors.push(e.message);
+      if (!gameStopped) showError("Uncaught Error", e.message + "\n" + (e.filename || "") + ":" + (e.lineno || ""), { source: "window.onerror" });
+    });
+
+    window.addEventListener("unhandledrejection", e => {
+      const msg = e.reason?.message || String(e.reason);
+      const stack = e.reason?.stack || "";
+      window.__damaErrors.push(msg);
+      if (!gameStopped) showError("Unhandled Promise Rejection", stack || msg, { source: "unhandledrejection" });
+      e.preventDefault();
+    });
+
     // 1. Load the Rust wgpu renderer (compiled to wasm).
     const loading = document.getElementById("loading");
 
@@ -58,8 +123,7 @@
       await mod.default();
       renderer = mod;
     } catch (e) {
-      loading.textContent = "Failed to load renderer: " + e.message;
-      console.error(e);
+      showError("Failed to load renderer", e.stack || e.message, { source: "renderer_init" });
       throw e;
     }
 
@@ -137,8 +201,7 @@
       const result = await DefaultRubyVM(module);
       vm = result.vm;
     } catch (e) {
-      loading.textContent = "Failed to load ruby.wasm: " + e.message;
-      console.error(e);
+      showError("Failed to load ruby.wasm", e.stack || e.message, { source: "ruby_wasm_init" });
       throw e;
     }
 
@@ -150,6 +213,8 @@
     // 3. JS-driven frame loop.
     let lastTime = performance.now();
     function gameLoop(timestamp) {
+      if (gameStopped) return;
+
       const dt = (timestamp - lastTime) / 1000;
       lastTime = timestamp;
       window.damaTime.delta = dt;
@@ -159,9 +224,7 @@
       try {
         vm.eval("$dama_tick.call");
       } catch (e) {
-        console.error("Ruby tick error:", e);
-        loading.textContent = "Error: " + e.message;
-        loading.style.display = "block";
+        showError("Game Error", e.stack || e.message, { source: "ruby_tick" });
         return;
       }
 
